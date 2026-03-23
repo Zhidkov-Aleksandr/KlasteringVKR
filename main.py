@@ -16,6 +16,7 @@ from merge_region_clusters import merge_region_clusters
 from district_subject_cluster_plots import plot_district_subject_clusters
 from cluster_subject_plots import plot_cluster_subjects
 from clustering_all_regions import run_global_clustering
+from district_scatter import plot_district_scatter
 import pandas as pd
 
 
@@ -120,6 +121,11 @@ plot_districts(data)
 # 11. Radar диаграммы кластеров
 # =========================
 plot_cluster_radar(cluster_means, results)
+
+# =========================
+# 11.5 Точечная диаграмма (Scatter Plot) для округов
+# =========================
+plot_district_scatter(data, clusters, centers)
 
 
 # =========================
