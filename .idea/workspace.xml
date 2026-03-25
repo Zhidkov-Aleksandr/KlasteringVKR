@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="071ad478-f5b9-4942-b86b-54afabc23499" name="Changes" comment="commit">
-      <change afterPath="$PROJECT_DIR$/district_scatter.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -170,7 +169,7 @@
       <workItem from="1773684044412" duration="3335000" />
       <workItem from="1774115582575" duration="622000" />
       <workItem from="1774196024628" duration="1394000" />
-      <workItem from="1774283431097" duration="3705000" />
+      <workItem from="1774283431097" duration="5275000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <option name="closed" value="true" />
@@ -204,7 +203,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774286825046</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="commit">
+      <option name="closed" value="true" />
+      <created>1774287866690</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1774287866690</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -224,6 +231,6 @@
     <SUITE FILE_PATH="coverage/KlasteringVKR$gui_tinting__.coverage" NAME="gui_tinting — копия Coverage Results" MODIFIED="1773686630262" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="X:/BdPy" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$regions_elbow.coverage" NAME="regions_elbow Coverage Results" MODIFIED="1772883938593" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$excel_loader.coverage" NAME="excel_loader Coverage Results" MODIFIED="1772643039871" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/KlasteringVKR$main.coverage" NAME="main Coverage Results" MODIFIED="1774284547001" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/KlasteringVKR$main.coverage" NAME="main Coverage Results" MODIFIED="1774287810641" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
