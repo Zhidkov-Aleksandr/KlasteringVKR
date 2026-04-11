@@ -6,6 +6,122 @@
   <component name="ChangeListManager">
     <list default="true" id="071ad478-f5b9-4942-b86b-54afabc23499" name="Changes" comment="commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_75_elbow_all_regions.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_76_heatmap_all_regions.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_77_bar_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_78_radar_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_79_bar_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_81_bar_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_82_radar_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_83_scatter_clusters.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/2_8_radar_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Table_2_12_Cluster_Means.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/all_regions_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis_cluster_factors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cleanup_plots.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster_analysis.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster_heatmap.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cluster_subject_plots.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/clustering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/clustering_all_regions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/all_regions_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/database.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/digitalization.db" beforeDir="false" afterPath="$PROJECT_DIR$/digitalization.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/district_clustering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/district_plots.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/district_scatter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/district_subject_cluster_plots.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/elbow_method.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/excel_loader.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/factor_ranking_plot.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/merge_region_clusters.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/cluster_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/clusters/cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/clusters/cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/clusters/cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Дальневосточный_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Приволжский_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Западный_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Северо-Кавказский_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Сибирский_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Уральский_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Центральный_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный федеральный округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный федеральный округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный федеральный округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный_федеральный_округ_cluster_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный_федеральный_округ_cluster_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts-subject/Южный_федеральный_округ_cluster_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/district_scatter_clusters.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Дальневосточный федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Приволжский федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Северо-Западный федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Северо-Кавказский федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Сибирский федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Уральский федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Центральный федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/districts/Южный федеральный округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/elbow_method.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/factor_analysis/factor_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/factor_analysis/factor_ranking.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/factor_ranking.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Дальневосточный_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Приволжский_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Северо-Западный_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Северо-Кавказский_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Сибирский_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Уральский_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Центральный_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/regions_elbow/elbow_Южный_федеральный_округ.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/radar_plot.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/regions_clustering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/regions_elbow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Дальневосточный_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Приволжский_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Северо-Западный_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Северо-Кавказский_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Сибирский_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Уральский_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Центральный_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/regions_clusters/Южный_федеральный_округ_clusters.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tables/cluster_feature_means.xlsx" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,6 +158,7 @@
     &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;Python.district_clustering.executor&quot;: &quot;Run&quot;,
     &quot;Python.excel_loader.executor&quot;: &quot;Run&quot;,
+    &quot;Python.gui_main.executor&quot;: &quot;Run&quot;,
     &quot;Python.gui_tinting — копия.executor&quot;: &quot;Run&quot;,
     &quot;Python.gui_tinting.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
@@ -50,7 +167,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;X:/BdPy/gui_tinting.py&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/GRENDIZER/Desktop/KlasteringVKR&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -60,7 +177,30 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.gui_main">
+    <configuration name="gui_main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="KlasteringVKR" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/controllers" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/controllers/gui_main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="gui_tinting — копия" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="KlasteringVKR" />
       <option name="ENV_FILES" value="" />
@@ -132,6 +272,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.gui_main" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.gui_tinting" />
         <item itemvalue="Python.gui_tinting — копия" />
@@ -170,6 +311,8 @@
       <workItem from="1774115582575" duration="622000" />
       <workItem from="1774196024628" duration="1394000" />
       <workItem from="1774283431097" duration="5275000" />
+      <workItem from="1775146718501" duration="3791000" />
+      <workItem from="1775923167528" duration="721000" />
     </task>
     <task id="LOCAL-00001" summary="commit">
       <option name="closed" value="true" />
@@ -228,9 +371,10 @@
     <SUITE FILE_PATH="coverage/KlasteringVKR$district_clustering.coverage" NAME="district_clustering Coverage Results" MODIFIED="1772874284478" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$gui_tinting.coverage" NAME="gui_tinting Coverage Results" MODIFIED="1773687107528" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="X:/BdPy" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$radar_plot.coverage" NAME="radar_plot Coverage Results" MODIFIED="1772875893959" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/KlasteringVKR$gui_main.coverage" NAME="gui_main Coverage Results" MODIFIED="1775923176271" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/controllers" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$gui_tinting__.coverage" NAME="gui_tinting — копия Coverage Results" MODIFIED="1773686630262" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="X:/BdPy" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$regions_elbow.coverage" NAME="regions_elbow Coverage Results" MODIFIED="1772883938593" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/KlasteringVKR$excel_loader.coverage" NAME="excel_loader Coverage Results" MODIFIED="1772643039871" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/KlasteringVKR$main.coverage" NAME="main Coverage Results" MODIFIED="1774287810641" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/KlasteringVKR$main.coverage" NAME="main Coverage Results" MODIFIED="1775146765877" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
