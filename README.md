@@ -1,3 +1,7 @@
+<img width="956" height="713" alt="image" src="https://github.com/user-attachments/assets/ea7af252-3aa8-450c-94a5-839dbfb14ec2" />
+
+
+
 # 📊 Информационно-аналитическая система кластеризации регионов РФ по уровню цифровизации малого бизнеса
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
