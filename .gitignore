@@ -1,2 +1,18 @@
 # created by virtualenv automatically
 
+# PyCharm
+.idea/
+
+# Виртуальное окружение
+.venv/
+venv/
+
+# Выходные данные / результаты
+output/
+
+# Python кэш
+__pycache__/
+*.pyc
+
+# Переменные окружения
+.env
