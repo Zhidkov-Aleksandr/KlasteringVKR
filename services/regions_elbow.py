@@ -49,7 +49,8 @@ def plot_regions_elbow(year=2024):
         X = scaler.fit_transform(matrix)
 
         distortions = []
-        max_k = min(10, len(matrix))
+        # Количество кластеров не должно превышать (или быть равным) количеству данных
+        max_k = min(8, len(matrix))
         K = range(1, max_k)
 
         for k in K:

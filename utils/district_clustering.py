@@ -34,9 +34,12 @@ def cluster_districts(data, k=3):
     scaler = StandardScaler()
 
     X = scaler.fit_transform(data)
+    
+    # Ограничиваем количество кластеров размером датасета
+    n_clusters = min(k, len(data))
 
     model = KMeans(
-        n_clusters=3,
+        n_clusters=n_clusters,
         random_state=42,
         n_init=10
     )

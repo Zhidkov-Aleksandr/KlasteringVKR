@@ -21,35 +21,54 @@ from services.cluster_subject_plots import plot_cluster_subjects
 from services.district_subject_cluster_plots import plot_district_subject_clusters
 from services.clustering_all_regions import run_global_clustering
 
-# Настройка страницы
+# Настройка страницы (добавляем скрытие сайдбара на уровне конфига)
 st.set_page_config(
     page_title="Анализ цифровизации РФ",
     page_icon="🇷🇺",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # Сворачиваем сайдбар
 )
 
-# Кастомный CSS
-st.markdown("""
+# Кастомный CSS для скрытия системных элементов Streamlit и стилизации (Светлая тема)
+hide_streamlit_style = """
 <style>
+    /* Скрываем гамбургер-меню в правом верхнем углу */
+    #MainMenu {visibility: hidden;}
+    /* Скрываем футер "Made with Streamlit" */
+    footer {visibility: hidden;}
+    /* Скрываем хедер (полоску сверху) */
+    header {visibility: hidden;}
+
+    /* Полностью скрываем боковую панель Streamlit и кнопку ее открытия */
+    [data-testid="collapsedControl"] { display: none !important; }
+    section[data-testid="stSidebar"] { display: none !important; }
+
+    /* Сдвигаем основной контент вверх, убирая пустой отступ */
+    .block-container {
+        padding-top: 1rem !important;
+        max-width: 1400px;
+    }
+
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
     
+    /* Сдвигаем главный заголовок выше */
     .main-header {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         color: white;
-        padding: 2.5rem;
-        border-radius: 16px;
-        margin-bottom: 2.5rem;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-top: -3rem;
+        margin-bottom: 2rem;
         text-align: center;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     .main-title {
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 800;
         margin: 0;
         padding: 0;
@@ -57,82 +76,67 @@ st.markdown("""
     }
     
     .sub-title {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: 400;
         opacity: 0.9;
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
     }
     
+    /* Стилизация кнопок - убрали нижний марджин, чтобы не было пустых мест */
     .stButton>button {
         width: 100%;
-        border-radius: 10px;
-        height: 65px;
-        font-size: 1.15rem;
+        border-radius: 8px;
+        height: 60px;
+        font-size: 1.05rem;
         font-weight: 600;
         transition: all 0.2s ease-in-out;
-        border: 1px solid rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
         background-color: white;
         color: #1e293b;
+        margin-bottom: 12px; /* Расстояние между кнопками вместо пустых карточек */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .stButton>button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
         border-color: #3b82f6;
         color: #2563eb;
     }
     
+    /* Стилизация консоли логов (Светлая тема) */
     .console-box {
-        background-color: #0f172a;
-        color: #10b981;
+        background-color: #f1f5f9;
+        color: #0f172a;
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         padding: 1.5rem;
         border-radius: 12px;
-        height: 450px;
+        height: 380px;
         overflow-y: auto;
-        border: 1px solid #1e293b;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        border: 1px solid #cbd5e1;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         line-height: 1.6;
         white-space: pre-wrap;
     }
-    
-    .section-card {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        margin-bottom: 1.5rem;
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
+
+    /* Убираем рамки карточек, делаем заголовки секций аккуратнее */
+    .section-title {
+        color: #1e293b;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
     }
     
-    .section-card:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-        border-color: #cbd5e1;
-    }
-    
-    /* Тёмная тема для карточек */
-    @media (prefers-color-scheme: dark) {
-        .section-card {
-            background-color: #1e293b;
-            border-color: #334155;
-        }
-        .section-card:hover {
-            border-color: #475569;
-        }
-        .stButton>button {
-            background-color: #334155;
-            color: white;
-            border-color: #475569;
-        }
-        .stButton>button:hover {
-            background-color: #475569;
-            color: white;
-        }
-    }
+    /* Убираем пустые label_visibility="collapsed" отступы */
+    div[data-testid="stFileUploader"] { margin-bottom: 1rem; }
+    div[data-testid="stSelectbox"] { margin-bottom: 1rem; }
+    div.row-widget.stButton { margin-bottom: 0.5rem; }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Заголовок
 st.markdown("""
@@ -148,13 +152,15 @@ if 'log_text' not in st.session_state:
 if 'file_uploaded' not in st.session_state:
     st.session_state.file_uploaded = False
 
-# Сайдбар
-with st.sidebar:
-    st.markdown("<h2 style='text-align: center;'>⚙️ Параметры анализа</h2>", unsafe_allow_html=True)
-    st.markdown("---")
+# Основной контент разбит на 3 колонки: [Настройки] [Модули] [Логи]
+col_settings, col_modules, col_logs = st.columns([1, 1, 1.8], gap="medium")
+
+with col_settings:
+    st.markdown('<div class="section-title">⚙️ Параметры</div>', unsafe_allow_html=True)
     
-    st.markdown("### 📁 Исходные данные")
-    uploaded_file = st.file_uploader("Загрузите Excel-файл (.xlsx)", type=["xlsx", "xls"], help="Файл должен содержать листы 'Регионы', 'Показатели', 'Округа' и т.д.")
+    st.markdown("**📁 Исходные данные**")
+    # Убрали label_visibility и просто используем пустое название
+    uploaded_file = st.file_uploader("", type=["xlsx", "xls"], label_visibility="collapsed")
     
     # Сохранение файла
     file_path = None
@@ -163,56 +169,37 @@ with st.sidebar:
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         st.session_state.file_uploaded = True
-        st.success("✅ Данные успешно загружены и проверены")
+        st.success("✅ Данные загружены")
         if "Ожидание загрузки данных" in st.session_state.log_text:
             st.session_state.log_text = "Данные загружены. Выберите модуль аналитики для запуска...\n"
     else:
         st.session_state.file_uploaded = False
         if os.path.exists("temp_uploaded_data.xlsx"):
-            # Если файл уже был загружен ранее (например, при перезагрузке страницы)
             file_path = "temp_uploaded_data.xlsx"
             st.session_state.file_uploaded = True
-            st.success("✅ Используются ранее загруженные данные")
+            st.success("✅ Ранее загружено")
         else:
-            st.warning("⚠️ Ожидание загрузки данных")
+            st.warning("⚠️ Ожидание данных")
             
-    st.markdown("### 📅 Период исследования")
+    st.markdown("<br>**📅 Год исследования**", unsafe_allow_html=True)
     year = st.selectbox(
-        "Выберите год для построения модели",
+        "",
         options=[2024, 2023, 2022],
-        index=0
+        index=0,
+        label_visibility="collapsed"
     )
-    
-    st.markdown("---")
-    st.markdown("### ℹ️ Справка")
-    st.info("Система использует алгоритм K-Means, метод главных компонент (PCA) и метод локтя для автоматической группировки 89 субъектов РФ по 11 ключевым факторам цифрового развития.")
 
-# Основной контент
-col1, col2 = st.columns([1, 1.3], gap="large")
+with col_modules:
+    st.markdown('<div class="section-title">🚀 Аналитика</div>', unsafe_allow_html=True)
+    
+    # Кнопки теперь идут подряд, без section-card
+    st.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ для выравнивания с загрузчиком
+    dist_btn = st.button("🌍 Макро-анализ (ФО)", key="btn1", disabled=not st.session_state.file_uploaded)
+    reg_btn = st.button("🗺️ Мезо-анализ (Внутри ФО)", key="btn2", disabled=not st.session_state.file_uploaded)
+    all_reg_btn = st.button("🇷🇺 Микро-анализ (Все РФ)", key="btn3", disabled=not st.session_state.file_uploaded)
 
-with col1:
-    st.markdown("### 🚀 Модули аналитики")
-    
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("#### 🌍 Макроуровень (Федеральные округа)")
-    st.caption("Оценка агрегированных показателей на уровне макрорегионов. Построение профилей округов.")
-    dist_btn = st.button("Запустить макро-анализ", key="btn1", disabled=not st.session_state.file_uploaded)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("#### 🗺️ Мезоуровень (Внутриокружной)")
-    st.caption("Детализированная кластеризация субъектов внутри каждого из 8 федеральных округов отдельно.")
-    reg_btn = st.button("Запустить мезо-анализ", key="btn2", disabled=not st.session_state.file_uploaded)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("#### 🇷🇺 Микроуровень (Все субъекты РФ)")
-    st.caption("Глобальное позиционирование всех 89 регионов в едином многомерном пространстве факторов.")
-    all_reg_btn = st.button("Запустить микро-анализ", key="btn3", disabled=not st.session_state.file_uploaded)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown("### 🖥️ Журнал выполнения")
+with col_logs:
+    st.markdown('<div class="section-title">🖥️ Журнал</div>', unsafe_allow_html=True)
     log_placeholder = st.empty()
     
     def render_log(text):

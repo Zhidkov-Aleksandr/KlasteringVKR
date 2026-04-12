@@ -19,8 +19,16 @@ COPY . .
 # Создаем папку output если ее нет (на всякий случай)
 RUN mkdir -p output
 
+# Настройка Streamlit на светлую тему и скрытие меню
+ENV STREAMLIT_THEME_BASE="light"
+ENV STREAMLIT_THEME_PRIMARY_COLOR="#3b82f6"
+ENV STREAMLIT_THEME_BACKGROUND_COLOR="#f8fafc"
+ENV STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR="#f1f5f9"
+ENV STREAMLIT_THEME_TEXT_COLOR="#1e293b"
+ENV STREAMLIT_CLIENT_TOOLBAR_MODE="viewer"
+
 # Указываем порт на котором будет работать Streamlit
 EXPOSE 8501
 
-# Команда для запуска приложения
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Команда для запуска приложения (добавлено скрытие футера и меню)
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--client.toolbarMode=viewer"]

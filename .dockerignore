@@ -7,3 +7,4 @@ output/
 temp_uploaded_data.xlsx
 .git
 .gitignore
+.streamlit/

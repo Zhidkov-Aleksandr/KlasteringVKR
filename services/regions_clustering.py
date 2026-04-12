@@ -42,8 +42,11 @@ def cluster_regions_by_district(year=2024):
 
         scaler = StandardScaler()
         X = scaler.fit_transform(matrix)
+        
+        # Защита от ошибки n_samples < n_clusters (если в округе мало субъектов)
+        n_clusters = min(3, len(matrix))
 
-        kmeans = KMeans(n_clusters=3, random_state=42)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
         kmeans.fit(X)
 
         print("\nЦентры кластеров:")
@@ -57,11 +60,14 @@ def cluster_regions_by_district(year=2024):
         # сортируем
         order = centers["score"].sort_values().index
 
-        cluster_map = {
-            order[0]: 3,  # аутсайдеры
-            order[1]: 2,  # потенциал
-            order[2]: 1  # лидеры
-        }
+        # Если кластеров меньше 3, адаптируем маппинг
+        cluster_map = {}
+        if n_clusters == 3:
+            cluster_map = {order[0]: 3, order[1]: 2, order[2]: 1}
+        elif n_clusters == 2:
+            cluster_map = {order[0]: 3, order[1]: 1}
+        elif n_clusters == 1:
+            cluster_map = {order[0]: 2}
 
         clusters = pd.Series(kmeans.labels_).map(cluster_map).values
 
