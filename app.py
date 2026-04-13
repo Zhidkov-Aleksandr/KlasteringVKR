@@ -146,11 +146,33 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Инициализация состояния
+# При инициализации очищаем состояние, чтобы старые файлы не подхватывались автоматически
+if 'app_initialized' not in st.session_state:
+    st.session_state.app_initialized = True
+    st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
+    if os.path.exists("temp_uploaded_data.xlsx"):
+        try:
+            os.remove("temp_uploaded_data.xlsx")
+        except:
+            pass
+    # Также очищаем старые результаты при новом запуске
+    for folder in ["output/districts", "output/regions", "output/all_regions"]:
+        if os.path.exists(folder):
+            try:
+                shutil.rmtree(folder)
+            except:
+                pass
+
 if 'log_text' not in st.session_state:
     st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
-if 'file_uploaded' not in st.session_state:
-    st.session_state.file_uploaded = False
+
+# Инициализация словаря для отслеживания выполненных анализов
+if 'analysis_completed' not in st.session_state:
+    st.session_state.analysis_completed = {
+        'macro': False,
+        'meso': False,
+        'micro': False
+    }
 
 # Основной контент разбит на 3 колонки: [Настройки] [Модули] [Логи]
 col_settings, col_modules, col_logs = st.columns([1, 1, 1.8], gap="medium")
@@ -159,31 +181,34 @@ with col_settings:
     st.markdown('<div class="section-title">⚙️ Параметры</div>', unsafe_allow_html=True)
     
     st.markdown("**📁 Исходные данные**")
-    # Убрали label_visibility и просто используем пустое название
-    uploaded_file = st.file_uploader("1", type=["xlsx", "xls"], label_visibility="collapsed")
     
-    # Сохранение файла
+    # Файл загружается ТОЛЬКО если пользователь его сам выбрал.
+    uploaded_file = st.file_uploader("", type=["xlsx", "xls"], label_visibility="collapsed")
+    
     file_path = None
+    file_is_ready = False
+    
     if uploaded_file is not None:
         file_path = "temp_uploaded_data.xlsx"
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        st.session_state.file_uploaded = True
+        file_is_ready = True
         st.success("✅ Данные загружены")
         if "Ожидание загрузки данных" in st.session_state.log_text:
             st.session_state.log_text = "Данные загружены. Выберите модуль аналитики для запуска...\n"
     else:
-        st.session_state.file_uploaded = False
+        st.warning("⚠️ Ожидание данных")
+        file_is_ready = False
+        # ВАЖНО: Удаляем временный файл, если загрузчик пуст, чтобы старые данные не использовались!
         if os.path.exists("temp_uploaded_data.xlsx"):
-            file_path = "temp_uploaded_data.xlsx"
-            st.session_state.file_uploaded = True
-            st.success("✅ Ранее загружено")
-        else:
-            st.warning("⚠️ Ожидание данных")
+            try:
+                os.remove("temp_uploaded_data.xlsx")
+            except Exception:
+                pass
             
     st.markdown("<br>**📅 Год исследования**", unsafe_allow_html=True)
     year = st.selectbox(
-        "2",
+        "",
         options=[2024, 2023, 2022],
         index=0,
         label_visibility="collapsed"
@@ -192,11 +217,11 @@ with col_settings:
 with col_modules:
     st.markdown('<div class="section-title">🚀 Аналитика</div>', unsafe_allow_html=True)
     
-    # Кнопки теперь идут подряд, без section-card
+    # Кнопки идут просто списком
     st.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ для выравнивания с загрузчиком
-    dist_btn = st.button("🌍 Макро-анализ (ФО)", key="btn1", disabled=not st.session_state.file_uploaded)
-    reg_btn = st.button("🗺️ Мезо-анализ (Внутри ФО)", key="btn2", disabled=not st.session_state.file_uploaded)
-    all_reg_btn = st.button("🇷🇺 Микро-анализ (Все РФ)", key="btn3", disabled=not st.session_state.file_uploaded)
+    dist_btn = st.button("🌍 Макро-анализ (ФО)", key="btn1", disabled=not file_is_ready)
+    reg_btn = st.button("🗺️ Мезо-анализ (Внутри ФО)", key="btn2", disabled=not file_is_ready)
+    all_reg_btn = st.button("🇷🇺 Микро-анализ (Все РФ)", key="btn3", disabled=not file_is_ready)
 
 with col_logs:
     st.markdown('<div class="section-title">🖥️ Журнал</div>', unsafe_allow_html=True)
@@ -208,7 +233,7 @@ with col_logs:
     render_log(st.session_state.log_text)
 
 # Обработка нажатий
-def process_analysis(level_name, process_func):
+def process_analysis(level_key, level_name, process_func):
     st.session_state.log_text = f"[{time.strftime('%H:%M:%S')}] Инициализация модуля: {level_name}...\n"
     render_log(st.session_state.log_text)
     
@@ -223,6 +248,10 @@ def process_analysis(level_name, process_func):
         st.session_state.log_text += output + f"\n[{time.strftime('%H:%M:%S')}] ✅ Модуль '{level_name}' успешно отработал."
         render_log(st.session_state.log_text)
         progress_bar.progress(100)
+        
+        # Отмечаем анализ как выполненный, чтобы показать результаты во вкладке
+        st.session_state.analysis_completed[level_key] = True
+        
         st.toast(f"Анализ '{level_name}' завершен!", icon="🎉")
         
     except Exception as e:
@@ -269,10 +298,10 @@ def run_level_3():
     print("Запуск глобального алгоритма кластеризации...")
     run_global_clustering()
 
-# Запуск
-if dist_btn: process_analysis("Макроуровень (ФО)", run_level_1)
-if reg_btn: process_analysis("Мезоуровень (Внутри ФО)", run_level_2)
-if all_reg_btn: process_analysis("Микроуровень (Глобальный)", run_level_3)
+# Запуск (с передачей ключа)
+if dist_btn: process_analysis('macro', "Макроуровень (ФО)", run_level_1)
+if reg_btn: process_analysis('meso', "Мезоуровень (Внутри ФО)", run_level_2)
+if all_reg_btn: process_analysis('micro', "Микроуровень (Глобальный)", run_level_3)
 
 # ---------------------------------------------------------
 # БЛОК РЕЗУЛЬТАТОВ (ОТРИСОВКА СОХРАНЕННЫХ ФАЙЛОВ)
@@ -283,8 +312,8 @@ st.caption("Здесь отображаются артефакты (график
 
 tab1, tab2, tab3 = st.tabs(["Федеральные округа (Макро)", "Регионы по округам (Мезо)", "Все субъекты РФ (Микро)"])
 
-def display_results(folder_path):
-    if os.path.exists(folder_path):
+def display_results(folder_path, is_completed):
+    if is_completed and os.path.exists(folder_path):
         st.success(f"Данные успешно сгенерированы и доступны в каталоге: `{folder_path}`")
         
         # Поиск таблиц и картинок
@@ -352,6 +381,6 @@ def display_results(folder_path):
     else:
         st.info("💡 Запустите соответствующий модуль аналитики (кнопки выше), чтобы сгенерировать результаты для этого раздела.")
 
-with tab1: display_results("output/districts")
-with tab2: display_results("output/regions")
-with tab3: display_results("output/all_regions")
+with tab1: display_results("output/districts", st.session_state.analysis_completed['macro'])
+with tab2: display_results("output/regions", st.session_state.analysis_completed['meso'])
+with tab3: display_results("output/all_regions", st.session_state.analysis_completed['micro'])
