@@ -3,13 +3,14 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import os
+from models.database import DB_NAME
 
 
 def cluster_regions_by_district(year=2024):
 
     os.makedirs("output/regions/tables", exist_ok=True)
 
-    conn = sqlite3.connect("digitalization.db")
+    conn = sqlite3.connect(DB_NAME)
 
     districts = pd.read_sql("""
         SELECT id, name
@@ -46,7 +47,7 @@ def cluster_regions_by_district(year=2024):
         # Защита от ошибки n_samples < n_clusters (если в округе мало субъектов)
         n_clusters = min(3, len(matrix))
 
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
         kmeans.fit(X)
 
         print("\nЦентры кластеров:")

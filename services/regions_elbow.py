@@ -5,6 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import os
 import shutil
+from models.database import DB_NAME
 
 
 def plot_regions_elbow(year=2024):
@@ -12,7 +13,7 @@ def plot_regions_elbow(year=2024):
     # создаём папку
     os.makedirs("output/regions/diagrams", exist_ok=True)
 
-    conn = sqlite3.connect("digitalization.db")
+    conn = sqlite3.connect(DB_NAME)
 
     # получаем список округов
     districts = pd.read_sql("""
@@ -54,7 +55,7 @@ def plot_regions_elbow(year=2024):
         K = range(1, max_k)
 
         for k in K:
-            kmeans = KMeans(n_clusters=k, random_state=42)
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
             kmeans.fit(X)
             distortions.append(kmeans.inertia_)
 

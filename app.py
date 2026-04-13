@@ -160,7 +160,7 @@ with col_settings:
     
     st.markdown("**📁 Исходные данные**")
     # Убрали label_visibility и просто используем пустое название
-    uploaded_file = st.file_uploader("", type=["xlsx", "xls"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("1", type=["xlsx", "xls"], label_visibility="collapsed")
     
     # Сохранение файла
     file_path = None
@@ -183,7 +183,7 @@ with col_settings:
             
     st.markdown("<br>**📅 Год исследования**", unsafe_allow_html=True)
     year = st.selectbox(
-        "",
+        "2",
         options=[2024, 2023, 2022],
         index=0,
         label_visibility="collapsed"

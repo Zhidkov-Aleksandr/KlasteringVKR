@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from math import pi
 from sklearn.decomposition import PCA
 import os
+from models.database import DB_NAME
 
 
 def run_global_clustering():
@@ -16,7 +17,7 @@ def run_global_clustering():
     os.makedirs("output/all_regions/tables", exist_ok=True)
     os.makedirs("output/all_regions/plots", exist_ok=True)
 
-    conn = sqlite3.connect('digitalization.db')
+    conn = sqlite3.connect(DB_NAME)
     query = """
     SELECT r.name as region, i.name as indicator, v.value
     FROM values_data v
@@ -39,9 +40,11 @@ def run_global_clustering():
 
     # Метод локтя
     distortions = []
-    K = range(1, 11)
+    # K не может превышать количество данных (для всех субъектов РФ их 89, поэтому 10 кластеров - это нормально)
+    max_k = min(11, len(matrix))
+    K = range(1, max_k)
     for k in K:
-        kmeans_model = KMeans(n_clusters=k, random_state=42)
+        kmeans_model = KMeans(n_clusters=k, random_state=42, n_init=10)
         kmeans_model.fit(X)
         distortions.append(kmeans_model.inertia_)
 
@@ -56,26 +59,33 @@ def run_global_clustering():
     plt.close()
 
     # Кластеризация (k=3)
-    kmeans = KMeans(n_clusters=3, random_state=42)
+    n_clusters = min(3, len(matrix))
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     matrix['Cluster_Raw'] = kmeans.fit_predict(X)
 
     # Умная сортировка кластеров по логике ВКР
     means_initial = matrix.groupby('Cluster_Raw').mean(numeric_only=True)
-    c_advanced = means_initial['ИИ'].idxmax()
-    remaining = [c for c in means_initial.index if c != c_advanced]
-    if means_initial.loc[remaining[0], 'Цифровые платформы'] > means_initial.loc[remaining[1], 'Цифровые платформы']:
-        c_potential = remaining[0]
-        c_outsider = remaining[1]
-    else:
-        c_potential = remaining[1]
-        c_outsider = remaining[0]
+    
+    if n_clusters == 3:
+        c_advanced = means_initial['ИИ'].idxmax()
+        remaining = [c for c in means_initial.index if c != c_advanced]
+        if means_initial.loc[remaining[0], 'Цифровые платформы'] > means_initial.loc[remaining[1], 'Цифровые платформы']:
+            c_potential = remaining[0]
+            c_outsider = remaining[1]
+        else:
+            c_potential = remaining[1]
+            c_outsider = remaining[0]
 
-    cluster_mapping = {c_advanced: 1, c_potential: 2, c_outsider: 3}
+        cluster_mapping = {c_advanced: 1, c_potential: 2, c_outsider: 3}
+    else:
+        # Fallback если данных слишком мало (хотя для всех регионов их 89)
+        cluster_mapping = {c: c+1 for c in range(n_clusters)}
+
     matrix['Кластер'] = matrix['Cluster_Raw'].map(cluster_mapping)
     matrix = matrix.drop(columns=['Cluster_Raw'])
 
     cluster_names = {1: 'Передовые субъекты', 2: 'Субъекты с потенциалом развития', 3: 'Субъекты-аутсайдеры'}
-    matrix['Описание кластера'] = matrix['Кластер'].map(cluster_names)
+    matrix['Описание кластера'] = matrix['Кластер'].map(cluster_names).fillna("Неизвестный кластер")
 
     # Сохранение таблицы регионов
     export_df = matrix[['Кластер', 'Описание кластера']].copy()
@@ -113,7 +123,7 @@ def run_global_clustering():
     angles = [n / float(N) * 2 * pi for n in range(N)]
     angles += angles[:1]
 
-    for c in [1, 2, 3]:
+    for c in means.index:
         # Радарная диаграмма
         fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
         values = means.loc[c].values.flatten().tolist()
@@ -123,7 +133,7 @@ def run_global_clustering():
         ax.fill(angles, values, alpha=0.4)
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(categories, size=8)
-        ax.set_title(f'{cluster_names[c]}', size=14, y=1.1)
+        ax.set_title(f'{cluster_names.get(c, "Кластер " + str(c))}', size=14, y=1.1)
         plt.tight_layout()
         radar_num = 2.78 if c == 1 else (2.80 if c == 2 else 2.82)
         plt.savefig(f'output/all_regions/diagrams/{str(radar_num).replace(".", "_")}_radar_cluster_{c}.png', dpi=300)
@@ -136,7 +146,7 @@ def run_global_clustering():
         # Строим вертикальные столбцы встроенным методом pandas как в изначальном скрипте
         vals.plot(kind="bar")
 
-        plt.title(f"Все субъекты РФ\nКластер {c} ({cluster_names[c]})")
+        plt.title(f"Все субъекты РФ\nКластер {c} ({cluster_names.get(c, '')})")
         plt.ylabel("Среднее значение показателя")
         plt.xlabel("")  # Убираем подпись оси X, так как сами названия показателей всё объясняют
         plt.xticks(rotation=45, ha="right")
@@ -162,12 +172,12 @@ def run_global_clustering():
     colors = {1: '#fde725', 2: '#21918c', 3: '#440154'}
 
     # Отрисовка точек по каждому кластеру отдельно для формирования правильной легенды
-    for c in [1, 2, 3]:
+    for c in means.index:
         idx = matrix['Кластер'] == c
         plt.scatter(
             X_pca[idx, 0], X_pca[idx, 1],
-            c=colors[c],
-            label=f'Точки кластера: {cluster_names[c]}',
+            c=colors.get(c, '#000000'),
+            label=f'Точки кластера: {cluster_names.get(c, c)}',
             s=80, alpha=0.8, edgecolors='white', linewidth=0.5
         )
 
@@ -187,7 +197,7 @@ def run_global_clustering():
     for raw_c, mapped_c in cluster_mapping.items():
         cx, cy = centroids_pca[raw_c, 0], centroids_pca[raw_c, 1]
         plt.annotate(
-            f'Центр:\n{cluster_names[mapped_c]}',
+            f'Центр:\n{cluster_names.get(mapped_c, mapped_c)}',
             xy=(cx, cy),
             xytext=(0, 15),  # Сдвиг текста на 15 пикселей вверх от центра треугольника
             textcoords='offset points',
