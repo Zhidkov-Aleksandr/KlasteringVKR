@@ -6,20 +6,12 @@ import time
 from contextlib import redirect_stdout
 from PIL import Image
 import pandas as pd
+import sqlite3
 
 # Импорты бизнес-логики
-from models.architecture import Pipeline
 from models.data_service import DistrictDataLoader
-from models.clustering_service import KMeansClusteringStrategy
-from models.analysis_service import ClusterAnalyzer
-from views.visualization_service import DistrictVisualizer
-from services.regions_elbow import plot_regions_elbow
-from services.regions_clustering import cluster_regions_by_district
-from services.analysis_cluster_factors import analyze_cluster_district_factors
-from services.merge_region_clusters import merge_region_clusters
-from services.cluster_subject_plots import plot_cluster_subjects
-from services.district_subject_cluster_plots import plot_district_subject_clusters
-from services.clustering_all_regions import run_global_clustering
+from services.universal_analyzer import UniversalClusterAnalyzer
+from models.database import DB_NAME
 
 # Настройка страницы (добавляем скрытие сайдбара на уровне конфига)
 st.set_page_config(
@@ -232,6 +224,7 @@ with col_logs:
     
     render_log(st.session_state.log_text)
 
+
 # Обработка нажатий
 def process_analysis(level_key, level_name, process_func):
     st.session_state.log_text = f"[{time.strftime('%H:%M:%S')}] Инициализация модуля: {level_name}...\n"
@@ -240,7 +233,12 @@ def process_analysis(level_key, level_name, process_func):
     progress_bar = st.progress(0)
     
     try:
-        # Перехватываем print() из сервисов
+        # Сначала загружаем данные в БД (это общее для всех уровней)
+        with io.StringIO() as buf, redirect_stdout(buf):
+            data_loader = DistrictDataLoader(file_path)
+            data_loader.load_data(year) 
+        
+        # Выполняем саму логику уровня
         with io.StringIO() as buf, redirect_stdout(buf):
             process_func()
             output = buf.getvalue()
@@ -249,7 +247,7 @@ def process_analysis(level_key, level_name, process_func):
         render_log(st.session_state.log_text)
         progress_bar.progress(100)
         
-        # Отмечаем анализ как выполненный, чтобы показать результаты во вкладке
+        # Отмечаем анализ как выполненный во вкладке
         st.session_state.analysis_completed[level_key] = True
         
         st.toast(f"Анализ '{level_name}' завершен!", icon="🎉")
@@ -260,43 +258,91 @@ def process_analysis(level_key, level_name, process_func):
         render_log(st.session_state.log_text)
         st.error(f"Критическая ошибка выполнения: {str(e)}")
 
-# Функции-обертки для каждого уровня
+# --- УНИВЕРСАЛЬНЫЕ ФУНКЦИИ ЗАПУСКА АНАЛИЗА ---
+
 def run_level_1():
-    print(f"Загрузка структуры данных из {file_path} за {year} год...")
+    print(f"Запуск макро-анализа (Федеральные округа) за {year} год...")
     if os.path.exists("output/districts"): shutil.rmtree("output/districts")
-    os.makedirs("output/districts", exist_ok=True)
     
-    print("Создание пайплайна обработки...")
-    data_loader = DistrictDataLoader(file_path)
-    clustering_strategy = KMeansClusteringStrategy()
-    analyzer = ClusterAnalyzer()
-    visualizer = DistrictVisualizer()
-    pipeline = Pipeline(data_loader, clustering_strategy, analyzer, visualizer)
+    conn = sqlite3.connect(DB_NAME)
+    query = """
+    SELECT fd.name as district, i.name as indicator, v.value
+    FROM values_data v
+    JOIN indicators i ON v.indicator_id = i.id
+    JOIN federal_districts fd ON v.territory_id = fd.id
+    WHERE v.territory_type = 'district' AND v.year = ?
+    """
+    df = pd.read_sql_query(query, conn, params=(year,))
+    conn.close()
+
+    matrix = df.pivot(index="district", columns="indicator", values="value")
     
-    print("Выполнение вычислений K-Means и генерация отчетов...")
-    pipeline.run(year)
+    analyzer = UniversalClusterAnalyzer(
+        data=matrix, 
+        output_dir="output/districts", 
+        level_name="Федеральные округа РФ"
+    )
+    analyzer.run_all(k=3)
+
 
 def run_level_2():
     if os.path.exists("output/regions"): shutil.rmtree("output/regions")
-    os.makedirs("output/regions", exist_ok=True)
     
-    print("Шаг 1/5: Расчет WCSS (Метод локтя) для каждого округа...")
-    plot_regions_elbow(year)
-    print("Шаг 2/5: Кластеризация K-Means (k=3) по макрорегионам...")
-    cluster_regions_by_district(year)
-    print("Шаг 3/5: Консолидация локальных результатов в единую матрицу...")
-    merge_region_clusters()
-    print("Шаг 4/5: Факторный анализ дисперсии центроидов...")
-    analyze_cluster_district_factors()
-    print("Шаг 5/5: Рендеринг визуализаций (радары, барчарты)...")
-    plot_cluster_subjects()
-    plot_district_subject_clusters()
+    print(f"Запуск мезо-анализа (Регионы по ФО) за {year} год...")
+    conn = sqlite3.connect(DB_NAME)
+    districts = pd.read_sql("SELECT id, name FROM federal_districts", conn)
+    
+    for _, district in districts.iterrows():
+        d_id = district["id"]
+        d_name = district["name"]
+        
+        query = f"""
+        SELECT r.name as region, i.name as indicator, v.value
+        FROM values_data v
+        JOIN regions r ON v.territory_id = r.id
+        JOIN indicators i ON v.indicator_id = i.id
+        WHERE v.territory_type = 'region' AND r.federal_district_id = {d_id} AND v.year = {year}
+        """
+        df = pd.read_sql(query, conn)
+        if df.empty: continue
+        
+        matrix = df.pivot(index="region", columns="indicator", values="value")
+        
+        d_name_safe = d_name.replace(" ", "_")
+        analyzer = UniversalClusterAnalyzer(
+            data=matrix,
+            output_dir=f"output/regions/{d_name_safe}",
+            level_name=d_name
+        )
+        analyzer.run_all(k=3)
+        
+    conn.close()
+    print("Мезо-анализ по всем федеральным округам завершен.")
+
 
 def run_level_3():
     if os.path.exists("output/all_regions"): shutil.rmtree("output/all_regions")
-    os.makedirs("output/all_regions", exist_ok=True)
-    print("Запуск глобального алгоритма кластеризации...")
-    run_global_clustering()
+    print(f"Запуск микро-анализа (Все субъекты РФ) за {year} год...")
+    
+    conn = sqlite3.connect(DB_NAME)
+    query = """
+    SELECT r.name as region, i.name as indicator, v.value
+    FROM values_data v
+    JOIN regions r ON v.territory_id = r.id
+    JOIN indicators i ON v.indicator_id = i.id
+    WHERE v.territory_type = 'region' AND v.year = ?
+    """
+    df = pd.read_sql_query(query, conn, params=(year,))
+    conn.close()
+
+    matrix = df.pivot(index="region", columns="indicator", values="value")
+    
+    analyzer = UniversalClusterAnalyzer(
+        data=matrix, 
+        output_dir="output/all_regions", 
+        level_name="Все субъекты РФ"
+    )
+    analyzer.run_all(k=3)
 
 # Запуск (с передачей ключа)
 if dist_btn: process_analysis('macro', "Макроуровень (ФО)", run_level_1)
@@ -304,7 +350,7 @@ if reg_btn: process_analysis('meso', "Мезоуровень (Внутри ФО)
 if all_reg_btn: process_analysis('micro', "Микроуровень (Глобальный)", run_level_3)
 
 # ---------------------------------------------------------
-# БЛОК РЕЗУЛЬТАТОВ (ОТРИСОВКА СОХРАНЕННЫХ ФАЙЛОВ)
+# БЛОК РЕЗУЛЬТАТОВ (УНИВЕРСАЛЬНЫЙ)
 # ---------------------------------------------------------
 st.markdown("---")
 st.markdown("## 📊 Визуализация результатов")
@@ -316,70 +362,97 @@ def display_results(folder_path, is_completed):
     if is_completed and os.path.exists(folder_path):
         st.success(f"Данные успешно сгенерированы и доступны в каталоге: `{folder_path}`")
         
-        # Поиск таблиц и картинок
-        excel_files = []
-        images = []
-        for root, _, files in os.walk(folder_path):
-            for file in files:
-                full_path = os.path.join(root, file)
-                if file.endswith('.xlsx'):
-                    excel_files.append(full_path)
-                elif file.endswith(('.png', '.jpg', '.jpeg')):
-                    images.append(full_path)
-        
-        # Таблицы
-        if excel_files:
-            st.markdown("### 📑 Сводные таблицы")
-            for xl_file in excel_files:
-                with st.expander(f"📄 {os.path.basename(xl_file)}", expanded=False):
-                    try:
-                        df = pd.read_excel(xl_file)
-                        st.dataframe(df, use_container_width=True)
-                        
-                        # Кнопка скачивания
-                        with open(xl_file, "rb") as f:
-                            st.download_button(
-                                label=f"💾 Скачать {os.path.basename(xl_file)}",
-                                data=f,
-                                file_name=os.path.basename(xl_file),
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                key=f"btn_{xl_file}"
-                            )
-                    except Exception as e:
-                        st.error(f"Не удалось отобразить таблицу: {str(e)}")
-        
-        st.markdown("---")
-        
-        # Картинки
-        if images:
-            st.markdown("### 📈 Графики и диаграммы")
-            # Сортируем картинки (сначала общие графики, потом конкретные кластеры/округа)
-            heatmaps = [img for img in images if 'heatmap' in img.lower() or 'ranking' in img.lower() or 'scatter' in img.lower() or 'elbow' in img.lower()]
-            others = [img for img in images if img not in heatmaps]
-            
-            # Показываем общие графики крупно
-            if heatmaps:
-                for img_path in heatmaps:
-                    try:
-                        st.image(Image.open(img_path), caption=os.path.basename(img_path), use_container_width=True)
-                        st.markdown("<br>", unsafe_allow_html=True)
-                    except: pass
-            
-            # Показываем остальные сеткой
-            if others:
-                st.markdown("#### Детализация по кластерам/округам")
-                cols = st.columns(3)
-                for i, img_path in enumerate(others):
-                    with cols[i % 3]:
-                        try:
-                            st.image(Image.open(img_path), caption=os.path.basename(img_path), use_container_width=True)
-                        except: pass
-        
-        if not excel_files and not images:
-             st.info("Директория создана, но в ней нет файлов. Возможно, алгоритм отработал с ошибкой.")
+        # Если это мезо-уровень (там папки внутри папок)
+        if "regions" in folder_path and "all_regions" not in folder_path:
+            subdirs = [os.path.join(folder_path, d) for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d))]
+            for subdir in subdirs:
+                district_name = os.path.basename(subdir).replace("_", " ")
+                with st.expander(f"📍 {district_name}", expanded=False):
+                    _render_folder_content(subdir)
+        else:
+            # Для макро и микро уровней
+            _render_folder_content(folder_path)
             
     else:
         st.info("💡 Запустите соответствующий модуль аналитики (кнопки выше), чтобы сгенерировать результаты для этого раздела.")
+
+def _render_folder_content(path):
+    excel_files = []
+    images = []
+    for root, _, files in os.walk(path):
+        for file in files:
+            full_path = os.path.join(root, file)
+            if file.endswith('.xlsx'):
+                excel_files.append(full_path)
+            elif file.endswith(('.png', '.jpg', '.jpeg')):
+                images.append(full_path)
+                
+    # 1. Сводные таблицы
+    if excel_files:
+        with st.expander("📑 Сводные таблицы данных", expanded=True):
+            for xl_file in excel_files:
+                st.markdown(f"**{os.path.basename(xl_file)}**")
+                try:
+                    df = pd.read_excel(xl_file)
+                    st.dataframe(df, use_container_width=True)
+                    
+                    with open(xl_file, "rb") as f:
+                        st.download_button(
+                            label=f"💾 Скачать {os.path.basename(xl_file)}",
+                            data=f,
+                            file_name=os.path.basename(xl_file),
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"btn_{xl_file}"
+                        )
+                except Exception as e:
+                    st.error(f"Ошибка чтения: {e}")
+                st.markdown("---")
+
+    if images:
+        # Группируем картинки
+        elbow = [img for img in images if 'elbow' in img.lower()]
+        heatmap = [img for img in images if 'heatmap' in img.lower()]
+        scatter = [img for img in images if 'scatter' in img.lower() or 'pca' in img.lower()]
+        radars = [img for img in images if 'radar' in img.lower()]
+        bars = [img for img in images if 'bar' in img.lower()]
+        
+        # 2. Метод локтя
+        if elbow:
+            with st.expander("📉 Метод локтя (Оптимальное число кластеров)", expanded=True):
+                st.image(Image.open(elbow[0]), use_container_width=True)
+                
+        # 3. Тепловая карта 
+        if heatmap:
+            with st.expander("🔥 Тепловая карта различий факторов", expanded=True):
+                st.image(Image.open(heatmap[0]), use_container_width=True)
+                
+        # 4. Точечная диаграмма (PCA)
+        if scatter:
+            with st.expander("📍 Пространственное распределение кластеров (PCA)", expanded=True):
+                st.image(Image.open(scatter[0]), use_container_width=True)
+                    
+        # 5. Профили кластеров (Радары и столбцы)
+        if radars or bars:
+            with st.expander("📊 Детализация по кластерам (Радары и диаграммы)", expanded=True):
+                # Группируем радар + бар по номеру кластера
+                cluster_nums = set()
+                for f in radars + bars:
+                    # Извлекаем номер из строки вида "radar_cluster_1.png"
+                    try:
+                        num = str(f).split('cluster_')[1].split('.')[0]
+                        cluster_nums.add(num)
+                    except: pass
+                
+                for num in sorted(list(cluster_nums)):
+                    st.markdown(f"#### Кластер {num}")
+                    r_col, b_col = st.columns(2)
+                    r_img = [img for img in radars if f"cluster_{num}" in img]
+                    b_img = [img for img in bars if f"cluster_{num}" in img]
+                    with r_col:
+                        if r_img: st.image(Image.open(r_img[0]), use_container_width=True)
+                    with b_col:
+                        if b_img: st.image(Image.open(b_img[0]), use_container_width=True)
+                    st.markdown("---")
 
 with tab1: display_results("output/districts", st.session_state.analysis_completed['macro'])
 with tab2: display_results("output/regions", st.session_state.analysis_completed['meso'])

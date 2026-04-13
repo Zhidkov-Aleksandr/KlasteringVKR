@@ -2,17 +2,18 @@ import os
 import glob
 
 def cleanup_images():
-
+    """Удаляет старые изображения перед новым запуском."""
     patterns = [
-        "plots/clusters/cluster_*.png",
-        "plots/districts/*.png",
-        "elbow_method.png"
+        "output/districts/plots/*.png",
+        "output/districts/diagrams/*.png",
+        "output/regions/plots/*.png",
+        "output/regions/diagrams/*.png",
+        "output/all_regions/plots/*.png",
+        "output/all_regions/diagrams/*.png"
     ]
-
     for pattern in patterns:
-        files = glob.glob(pattern)
-        for file in files:
+        for file in glob.glob(pattern):
             try:
                 os.remove(file)
-            except:
+            except OSError:
                 pass
