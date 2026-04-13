@@ -140,24 +140,19 @@ st.markdown("""
 if 'app_initialized' not in st.session_state:
     st.session_state.app_initialized = True
     st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
+    # Удаляем временный файл чтобы заставить грузить новый
     if os.path.exists("temp_uploaded_data.xlsx"):
         try:
             os.remove("temp_uploaded_data.xlsx")
         except:
             pass
-    # Также очищаем старые результаты при новом запуске
+    # Очищаем старые результаты
     for folder in ["output/districts", "output/regions", "output/all_regions"]:
         if os.path.exists(folder):
             try:
                 shutil.rmtree(folder)
             except:
                 pass
-                
-    st.session_state.analysis_completed = {
-        'macro': False,
-        'meso': False,
-        'micro': False
-    }
 
 if 'log_text' not in st.session_state:
     st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
@@ -170,7 +165,6 @@ with col_settings:
     
     st.markdown("**📁 Исходные данные**")
     
-    # Файл загружается ТОЛЬКО если пользователь его сам выбрал.
     uploaded_file = st.file_uploader("", type=["xlsx", "xls"], label_visibility="collapsed")
     
     file_path = None
@@ -187,26 +181,16 @@ with col_settings:
     else:
         st.warning("⚠️ Ожидание данных")
         file_is_ready = False
-        # ВАЖНО: Удаляем временный файл, если загрузчик пуст, чтобы старые данные не использовались!
         if os.path.exists("temp_uploaded_data.xlsx"):
             try:
                 os.remove("temp_uploaded_data.xlsx")
             except Exception:
                 pass
-            
-    st.markdown("<br>**📅 Год исследования**", unsafe_allow_html=True)
-    year = st.selectbox(
-        "",
-        options=[2024, 2023, 2022],
-        index=0,
-        label_visibility="collapsed"
-    )
 
 with col_modules:
     st.markdown('<div class="section-title">🚀 Аналитика</div>', unsafe_allow_html=True)
     
-    # Кнопки идут просто списком
-    st.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ для выравнивания с загрузчиком
+    st.markdown("<br>", unsafe_allow_html=True) 
     dist_btn = st.button("🌍 Макро-анализ (ФО)", key="btn1", disabled=not file_is_ready)
     reg_btn = st.button("🗺️ Мезо-анализ (Внутри ФО)", key="btn2", disabled=not file_is_ready)
     all_reg_btn = st.button("🇷🇺 Микро-анализ (Все РФ)", key="btn3", disabled=not file_is_ready)
@@ -220,8 +204,12 @@ with col_logs:
     
     render_log(st.session_state.log_text)
 
+
+# Фиксированный год для базы данных
+DEFAULT_YEAR = 2024
+
 # Обработка нажатий
-def process_analysis(level_key, level_name, process_func):
+def process_analysis(level_name, process_func):
     st.session_state.log_text = f"[{time.strftime('%H:%M:%S')}] Инициализация модуля: {level_name}...\n"
     render_log(st.session_state.log_text)
     
@@ -231,19 +219,16 @@ def process_analysis(level_key, level_name, process_func):
         # Сначала загружаем данные в БД (это общее для всех уровней)
         with io.StringIO() as buf, redirect_stdout(buf):
             data_loader = DistrictDataLoader(file_path)
-            data_loader.load_data(year) 
+            data_loader.load_data(DEFAULT_YEAR) 
         
         # Выполняем саму логику уровня
         with io.StringIO() as buf, redirect_stdout(buf):
-            process_func()
+            process_func(DEFAULT_YEAR)
             output = buf.getvalue()
             
         st.session_state.log_text += output + f"\n[{time.strftime('%H:%M:%S')}] ✅ Модуль '{level_name}' успешно отработал."
         render_log(st.session_state.log_text)
         progress_bar.progress(100)
-        
-        # Отмечаем анализ как выполненный (привязка теперь по наличию файлов, но флаг тоже меняем)
-        st.session_state.analysis_completed[level_key] = True
         
         st.toast(f"Анализ '{level_name}' завершен!", icon="🎉")
         
@@ -255,8 +240,9 @@ def process_analysis(level_key, level_name, process_func):
 
 # --- УНИВЕРСАЛЬНЫЕ ФУНКЦИИ ЗАПУСКА АНАЛИЗА ---
 
-def run_level_1():
-    print(f"Запуск макро-анализа (Федеральные округа) за {year} год...")
+def run_level_1(year):
+    print(f"Запуск макро-анализа (Федеральные округа)...")
+    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/districts"): shutil.rmtree("output/districts")
     
     conn = sqlite3.connect(DB_NAME)
@@ -280,10 +266,11 @@ def run_level_1():
     analyzer.run_all(k=3)
 
 
-def run_level_2():
+def run_level_2(year):
+    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/regions"): shutil.rmtree("output/regions")
     
-    print(f"Запуск мезо-анализа (Регионы по ФО) за {year} год...")
+    print(f"Запуск мезо-анализа (Регионы по ФО)...")
     conn = sqlite3.connect(DB_NAME)
     districts = pd.read_sql("SELECT id, name FROM federal_districts", conn)
     
@@ -315,10 +302,11 @@ def run_level_2():
     print("Мезо-анализ по всем федеральным округам завершен.")
 
 
-def run_level_3():
+def run_level_3(year):
+    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/all_regions"): shutil.rmtree("output/all_regions")
         
-    print(f"Запуск микро-анализа (Все субъекты РФ) за {year} год...")
+    print(f"Запуск микро-анализа (Все субъекты РФ)...")
     
     conn = sqlite3.connect(DB_NAME)
     query = """
@@ -340,10 +328,10 @@ def run_level_3():
     )
     analyzer.run_all(k=3)
 
-# Запуск (с передачей ключа)
-if dist_btn: process_analysis('macro', "Макроуровень (ФО)", run_level_1)
-if reg_btn: process_analysis('meso', "Мезоуровень (Внутри ФО)", run_level_2)
-if all_reg_btn: process_analysis('micro', "Микроуровень (Глобальный)", run_level_3)
+# Запуск
+if dist_btn: process_analysis("Макроуровень (ФО)", run_level_1)
+if reg_btn: process_analysis("Мезоуровень (Внутри ФО)", run_level_2)
+if all_reg_btn: process_analysis("Микроуровень (Глобальный)", run_level_3)
 
 # ---------------------------------------------------------
 # БЛОК РЕЗУЛЬТАТОВ (УНИВЕРСАЛЬНЫЙ)
