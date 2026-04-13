@@ -188,7 +188,7 @@ with col_settings:
                 pass
 
 with col_modules:
-    st.markdown('<div class="section-title">🚀 Аналитика</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🔍️ Аналитика</div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True) 
     dist_btn = st.button("🌍 Макро-анализ (ФО)", key="btn1", disabled=not file_is_ready)
