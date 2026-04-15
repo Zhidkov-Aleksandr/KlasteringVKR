@@ -189,7 +189,7 @@ with col_settings:
                 pass
 
 with col_modules:
-    st.markdown('<div class="section-title">🚀 Аналитика</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🔎 Аналитика</div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True) 
     # Используем use_container_width=True для всех кнопок
