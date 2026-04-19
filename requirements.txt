@@ -6,3 +6,5 @@ seaborn
 customtkinter
 streamlit
 plotly
+requests
+pytest

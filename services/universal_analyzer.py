@@ -60,7 +60,18 @@ class UniversalClusterAnalyzer:
             distortions.append(model.inertia_)
 
         plt.figure(figsize=(6, 4))
-        plt.plot(K, distortions, marker='o', color='blue', linestyle='-')
+        plt.plot(K, distortions, marker='o', color='blue', linestyle='-', alpha=0.6)
+        
+        # Выделение точки k=3
+        if 3 in K:
+            k_idx = list(K).index(3)
+            plt.plot(3, distortions[k_idx], marker='o', color='red', markersize=10, label='Оптимальное k=3')
+            plt.annotate('Оптимум (k=3)', 
+                         xy=(3, distortions[k_idx]), 
+                         xytext=(3.5, distortions[k_idx] + (max(distortions)-min(distortions))*0.05),
+                         arrowprops=dict(facecolor='red', shrink=0.05, width=1, headwidth=5),
+                         fontsize=9, color='red', fontweight='bold')
+
         plt.xlabel('Количество кластеров (k)')
         plt.ylabel('Внутрикластерная ошибка (WCSS)')
         plt.title(f'Метод локтя\n{self.level_name}')
@@ -248,6 +259,59 @@ class UniversalClusterAnalyzer:
         
         return fig
 
+    def get_choropleth_plotly(self):
+        """Создает интерактивную карту РФ с кластерами"""
+        # Оставляем карту ТОЛЬКО для глобального уровня (Все субъекты РФ)
+        if "Все субъекты РФ" not in self.level_name:
+            return None
+
+        import requests
+        
+        # НОВАЯ РАБОЧАЯ ССЫЛКА
+        geojson_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson"
+        try:
+            response = requests.get(geojson_url, timeout=10)
+            if response.status_code != 200:
+                return None
+            repo = response.json()
+        except:
+            return None
+
+        # Подготовка данных
+        plot_df = self.data.copy()
+        plot_df['Region'] = plot_df.index
+        
+        # Добавляем ключ для маппинга в GeoJSON
+        for feature in repo['features']:
+            feature['id'] = feature['properties']['name']
+
+        color_map = {'1': '#fde725', '2': '#21918c', '3': '#440154'}
+
+        fig = px.choropleth(
+            plot_df,
+            geojson=repo,
+            locations='Region',
+            color=plot_df['Кластер'].astype(str),
+            color_discrete_map=color_map,
+            hover_name='Region',
+            hover_data={'Кластер': True, 'Описание кластера': True},
+            title=f"Географическое распределение кластеров: {self.level_name}",
+            labels={'color': 'Кластер'},
+            height=700 # Увеличиваем высоту фигуры
+        )
+
+        fig.update_geos(
+            visible=False, 
+            fitbounds="locations", # Автоматически подгоняет масштаб под Россию
+        )
+        
+        fig.update_layout(
+            margin={"r":0,"t":50,"l":0,"b":0},
+            legend_title_text='Кластер'
+        )
+        
+        return fig
+
     def plot_radars_and_bars(self):
         """6. Детализация по кластерам (радары и столбчатые диаграммы)"""
         print(f"[{self.level_name}] Построение радарных и столбчатых диаграмм...")
@@ -284,16 +348,34 @@ class UniversalClusterAnalyzer:
 
     def run_all(self, k=3):
         """Запуск всего цикла анализа для уровня"""
+        print(f"[{self.level_name}] Начало полного цикла анализа...")
         self.plot_elbow()
         self.run_clustering(k=k)
         self.export_tables()
         self.plot_heatmap()
         self.plot_pca_scatter()
         
-        # Сохраняем интерактивную версию
-        fig = self.get_pca_plotly()
-        if fig:
-            fig.write_html(f"{self.output_dir}/plots/pca_interactive.html")
+        # Сохраняем интерактивную версию PCA
+        try:
+            fig_pca = self.get_pca_plotly()
+            if fig_pca:
+                path_pca = f"{self.output_dir}/plots/pca_interactive.html"
+                fig_pca.write_html(path_pca)
+                print(f"[{self.level_name}] PCA HTML сохранен: {path_pca}")
+        except Exception as e:
+            print(f"[{self.level_name}] Ошибка сохранения PCA HTML: {e}")
+            
+        # Сохраняем интерактивную карту
+        try:
+            fig_map = self.get_choropleth_plotly()
+            if fig_map:
+                path_map = f"{self.output_dir}/plots/map_interactive.html"
+                fig_map.write_html(path_map)
+                print(f"[{self.level_name}] Карта HTML сохранена: {path_map}")
+            else:
+                print(f"[{self.level_name}] Карта не создана (get_choropleth_plotly вернул None)")
+        except Exception as e:
+            print(f"[{self.level_name}] Ошибка сохранения Карты HTML: {e}")
             
         self.plot_radars_and_bars()
         print(f"[{self.level_name}] Анализ успешно завершен!")

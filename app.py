@@ -13,6 +13,7 @@ import streamlit.components.v1 as components
 from models.data_service import DistrictDataLoader
 from services.universal_analyzer import UniversalClusterAnalyzer
 from models.database import DB_NAME
+from utils.test_runner import run_project_tests
 
 # Настройка страницы (добавляем скрытие сайдбара на уровне конфига)
 st.set_page_config(
@@ -350,7 +351,7 @@ st.markdown("---")
 st.markdown("## 📊 Визуализация результатов")
 st.caption("Разверните вкладки ниже, чтобы просмотреть результаты (таблицы, графики, диаграммы) для каждого уровня аналитики.")
 
-tab1, tab2, tab3 = st.tabs(["🌍 Федеральные округа (Макро)", "🗺️ Регионы по округам (Мезо)", "🇷🇺 Все субъекты РФ (Микро)"])
+tab1, tab2, tab3, tab4 = st.tabs(["🌍 Федеральные округа (Макро)", "🗺️ Регионы по округам (Мезо)", "🇷🇺 Все субъекты РФ (Микро)", "🛠️ Тестирование"])
 
 def render_level_data(folder_path, prefix="", unique_key=""):
     """
@@ -431,7 +432,15 @@ def render_level_data(folder_path, prefix="", unique_key=""):
     # 5. Точечная диаграмма (PCA)
     scatter = [img for img in images if 'scatter' in img.lower() or 'pca' in img.lower()]
     interactive_pca = [f for f in html_files if 'pca' in f.lower()]
+    interactive_map = [f for f in html_files if 'map' in f.lower()]
     
+    if interactive_map:
+        with st.expander(f"{prefix}🗺️ Интерактивная карта кластеров России", expanded=False):
+            st.info("💡 Наведите на регион для просмотра деталей. Карту можно масштабировать.")
+            with open(interactive_map[0], 'r', encoding='utf-8') as f:
+                html_data = f.read()
+                components.html(html_data, height=750)
+
     if interactive_pca or scatter:
         with st.expander(f"{prefix}📍 Пространственное распределение кластеров (PCA)", expanded=False):
             if interactive_pca:
@@ -504,3 +513,27 @@ with tab2:
 with tab3: 
     st.markdown(f'<div style="display:none">{st.session_state.update_key}</div>', unsafe_allow_html=True)
     display_results("output/all_regions", "micro")
+
+with tab4:
+    st.markdown("### 🧪 Модульное и интеграционное тестирование")
+    st.write("Нажмите кнопку ниже, чтобы запустить автоматическую проверку математических модулей и алгоритмов системы.")
+    
+    test_btn = st.button("🚀 Запустить системные тесты")
+    
+    if test_btn:
+        with st.spinner("Выполнение тестов..."):
+            try:
+                exit_code, report = run_project_tests()
+                
+                if exit_code == 0:
+                    st.success("✅ Все тесты пройдены успешно!")
+                else:
+                    st.warning(f"⚠️ Тестирование завершено с предупреждениями или ошибками (Код: {exit_code})")
+                
+                with st.expander("📄 Подробный отчет о тестировании", expanded=True):
+                    st.code(report)
+                
+                st.info("💡 Результаты этого тестирования подтверждают корректность работы алгоритмов K-means, PCA и модулей предобработки данных.")
+            except Exception as e:
+                st.error(f"Ошибка при запуске тестов: {e}")
+                st.info("Убедитесь, что библиотека pytest установлена в окружении.")

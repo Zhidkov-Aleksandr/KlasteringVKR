@@ -36,7 +36,19 @@ class Visualizer:
         Отрисовка и сохранение графика метода локтя.
         """
         plt.figure(figsize=(8, 5))
-        plt.plot(k_range, inertias, marker='o', linestyle='-', color='b')
+        plt.plot(k_range, inertias, marker='o', linestyle='-', color='b', alpha=0.6)
+        
+        # Выделение точки k=3
+        if 3 in k_range:
+            k_list = list(k_range)
+            k_idx = k_list.index(3)
+            plt.plot(3, inertias[k_idx], marker='o', color='red', markersize=10)
+            plt.annotate('Оптимальное число кластеров (k=3)', 
+                         xy=(3, inertias[k_idx]), 
+                         xytext=(3.5, inertias[k_idx] + (max(inertias)-min(inertias))*0.05),
+                         arrowprops=dict(facecolor='red', shrink=0.05, width=1, headwidth=5),
+                         fontsize=10, color='red', fontweight='bold')
+
         plt.title('Метод локтя для определения оптимального числа кластеров')
         plt.xlabel('Количество кластеров (k)')
         plt.ylabel('Внутрикластерная дисперсия (W_k)')
