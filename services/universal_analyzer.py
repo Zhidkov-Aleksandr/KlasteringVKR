@@ -5,6 +5,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
 from math import pi
 import os
 
@@ -204,6 +206,48 @@ class UniversalClusterAnalyzer:
         plt.savefig(f"{self.output_dir}/plots/pca_scatter.png", dpi=300, bbox_inches='tight')
         plt.close()
 
+    def get_pca_plotly(self):
+        """Возвращает интерактивную фигуру Plotly для отображения в Streamlit"""
+        if len(self.data) < 2:
+            return None
+
+        pca = PCA(n_components=2, random_state=42)
+        X_pca = pca.fit_transform(self.X_scaled)
+        
+        # Подготовка данных для Plotly
+        plot_df = pd.DataFrame(
+            X_pca, 
+            columns=['PC1', 'PC2'], 
+            index=self.data.index
+        )
+        plot_df['Кластер'] = self.data['Кластер'].astype(str)
+        plot_df['Описание'] = self.data['Описание кластера']
+        plot_df['Объект'] = self.data.index
+
+        # Цвета как в статичном графике
+        color_map = {
+            '1': '#fde725', 
+            '2': '#21918c', 
+            '3': '#440154'
+        }
+
+        fig = px.scatter(
+            plot_df, 
+            x='PC1', 
+            y='PC2', 
+            color='Кластер',
+            hover_name='Объект',
+            hover_data={'Кластер': True, 'Описание': True, 'PC1': False, 'PC2': False},
+            color_discrete_map=color_map,
+            title=f"Интерактивное распределение: {self.level_name}",
+            labels={'PC1': 'Главная компонента 1', 'PC2': 'Главная компонента 2'}
+        )
+
+        fig.update_traces(marker=dict(size=12, line=dict(width=1, color='White')))
+        fig.update_layout(legend_title_text='Кластер')
+        
+        return fig
+
     def plot_radars_and_bars(self):
         """6. Детализация по кластерам (радары и столбчатые диаграммы)"""
         print(f"[{self.level_name}] Построение радарных и столбчатых диаграмм...")
@@ -245,5 +289,11 @@ class UniversalClusterAnalyzer:
         self.export_tables()
         self.plot_heatmap()
         self.plot_pca_scatter()
+        
+        # Сохраняем интерактивную версию
+        fig = self.get_pca_plotly()
+        if fig:
+            fig.write_html(f"{self.output_dir}/plots/pca_interactive.html")
+            
         self.plot_radars_and_bars()
         print(f"[{self.level_name}] Анализ успешно завершен!")

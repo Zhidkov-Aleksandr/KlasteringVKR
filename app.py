@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 from PIL import Image
 import pandas as pd
 import sqlite3
+import streamlit.components.v1 as components
 
 # Импорты бизнес-логики
 from models.data_service import DistrictDataLoader
@@ -359,6 +360,7 @@ def render_level_data(folder_path, prefix="", unique_key=""):
     """
     excel_files = []
     images = []
+    html_files = []
     
     # Собираем файлы ТОЛЬКО из этой папки
     if os.path.exists(folder_path):
@@ -369,6 +371,8 @@ def render_level_data(folder_path, prefix="", unique_key=""):
                     excel_files.append(full_path)
                 elif file.endswith(('.png', '.jpg', '.jpeg')):
                     images.append(full_path)
+                elif file.endswith('.html'):
+                    html_files.append(full_path)
         
         # Для вложенных папок tables/plots/diagrams
         for sub_f in ["tables", "plots", "diagrams"]:
@@ -381,6 +385,8 @@ def render_level_data(folder_path, prefix="", unique_key=""):
                             excel_files.append(full_path)
                         elif file.endswith(('.png', '.jpg', '.jpeg')):
                             images.append(full_path)
+                        elif file.endswith('.html'):
+                            html_files.append(full_path)
 
     # 1. Метод локтя
     elbow = [img for img in images if 'elbow' in img.lower()]
@@ -424,9 +430,17 @@ def render_level_data(folder_path, prefix="", unique_key=""):
 
     # 5. Точечная диаграмма (PCA)
     scatter = [img for img in images if 'scatter' in img.lower() or 'pca' in img.lower()]
-    if scatter:
+    interactive_pca = [f for f in html_files if 'pca' in f.lower()]
+    
+    if interactive_pca or scatter:
         with st.expander(f"{prefix}📍 Пространственное распределение кластеров (PCA)", expanded=False):
-            st.image(Image.open(scatter[0]), use_container_width=True)
+            if interactive_pca:
+                st.info("💡 Это интерактивный график. Наведите курсор на точку, чтобы увидеть название региона.")
+                with open(interactive_pca[0], 'r', encoding='utf-8') as f:
+                    html_data = f.read()
+                    components.html(html_data, height=600)
+            elif scatter:
+                st.image(Image.open(scatter[0]), use_container_width=True)
 
     # 6. Профили кластеров (Радары и столбцы)
     radars = [img for img in images if 'radar' in img.lower()]
