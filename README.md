@@ -1,3 +1,5 @@
+<img width="1245" height="909" alt="{7DB3FA3F-2668-4AC5-AC20-C8C34E87D65F}" src="https://github.com/user-attachments/assets/b46af0fe-22de-4df2-97d9-8bbb50e64bd7" />
+
 # 🇷🇺 Платформа кластерного анализа цифровизации регионов РФ
 
 Интеллектуальная информационно-аналитическая система для многомерного статистического анализа и сегментации субъектов Российской Федерации по уровню цифрового развития. Проект реализован в рамках выпускной квалификационной работы (ВКР).
@@ -59,3 +61,18 @@
 
 ---
 *Разработано в качестве программного обеспечения для исследования региональной дифференциации цифрового развития РФ.*
+
+ 
+<img width="1244" height="635" alt="{CCBEF522-09CF-4F47-A173-101E0535C28B}" src="https://github.com/user-attachments/assets/9f9b98d1-7c34-47e7-9624-adefa365a2e8" />
+ <br>
+<img width="1247" height="618" alt="{30BB0FE4-AEFD-40D4-A599-E5B3FC77C7CD}" src="https://github.com/user-attachments/assets/f569b59b-28c5-4564-a8b1-95bfc7706f77" />
+ <br>
+<img width="1255" height="773" alt="{F1313070-900A-4293-B448-065424FCAC33}" src="https://github.com/user-attachments/assets/fe36c158-293d-4b66-9ee6-0f5c6f3135bb" />
+ <br>
+<img width="1252" height="686" alt="{76C42DB1-FEF2-47FE-8C94-14EE142292E6}" src="https://github.com/user-attachments/assets/302efedb-115b-4c00-8b59-774788ea48ad" />
+ 
+
+
+
+
+
