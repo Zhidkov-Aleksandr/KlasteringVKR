@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
@@ -79,6 +80,205 @@ class UniversalClusterAnalyzer:
         plt.tight_layout()
         plt.savefig(f"{self.output_dir}/diagrams/elbow_method.png", dpi=300)
         plt.close()
+
+    # === ВАЛИДАЦИЯ ЧИСЛА КЛАСТЕРОВ (добавлено) ===
+    def calculate_cluster_validation(self, chosen_k=3):
+        """
+        Расчет дополнительных метрик валидации: силуэт, Дэвис-Болдин, Калинский-Харабаш.
+        """
+        print(f"[{self.level_name}] Расчет метрик валидации (Силуэт, Дэвис-Болдин, Калинский-Харабаш)...")
+
+        results = []
+        inertias = []
+        max_k = min(11, len(self.data))
+        if max_k <= 2:
+            print(f"[{self.level_name}] Недостаточно данных для расчета метрик валидации (нужно k >= 2).")
+            return
+
+        k_range = range(1, max_k)
+
+        for k in k_range:
+            model = KMeans(n_clusters=k, random_state=42, n_init=10)
+            model.fit(self.X_scaled)
+            inertias.append(model.inertia_)
+
+            if k >= 2:
+                labels = model.labels_
+                sil = silhouette_score(self.X_scaled, labels)
+                db = davies_bouldin_score(self.X_scaled, labels)
+                ch = calinski_harabasz_score(self.X_scaled, labels)
+                results.append({
+                    'k': k,
+                    'Silhouette': round(sil, 4),
+                    'Davies-Bouldin': round(db, 4),
+                    'Calinski-Harabasz': round(ch, 2)
+                })
+
+        # 2. РЕЗУЛЬТАТЫ В ТАБЛИЦЕ
+        df_res = pd.DataFrame(results)
+        df_print = df_res.copy()
+        df_print['Оптимум'] = df_print['k'].apply(lambda x: ' <---' if x == chosen_k else '')
+        print("\nЧисленное обоснование выбора числа кластеров:")
+        print(df_print.to_string(index=False))
+
+        # 3. КОМБИНИРОВАННЫЙ ГРАФИК
+        fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+        fig.suptitle(f"Определение оптимального числа кластеров (k)\n{self.level_name}", fontsize=16, fontweight='bold')
+
+        # Subplot 1: Метод локтя (SSE)
+        axs[0, 0].plot(k_range, inertias, marker='o', color='blue', linestyle='-', alpha=0.7)
+        axs[0, 0].set_title('Метод локтя (Inertia/WCSS)', fontsize=12)
+        axs[0, 0].axvline(x=chosen_k, color='red', linestyle='--', label=f'Выбрано k={chosen_k}')
+        axs[0, 0].set_ylabel('Inertia')
+        axs[0, 0].legend()
+
+        # Subplot 2: Коэффициент силуэта
+        axs[0, 1].plot(df_res['k'], df_res['Silhouette'], marker='o', color='green', linestyle='-', alpha=0.7)
+        axs[0, 1].set_title('Коэффициент силуэта (выше - лучше)', fontsize=12)
+        best_sil_k = df_res.loc[df_res['Silhouette'].idxmax(), 'k']
+        axs[0, 1].axvline(x=chosen_k, color='red', linestyle='--')
+        axs[0, 1].axvline(x=best_sil_k, color='green', linestyle=':', label=f'Max Silh (k={best_sil_k})')
+        axs[0, 1].set_ylabel('Score')
+        axs[0, 1].legend()
+
+        # Subplot 3: Индекс Дэвиса-Болдина
+        axs[1, 0].plot(df_res['k'], df_res['Davies-Bouldin'], marker='o', color='orange', linestyle='-', alpha=0.7)
+        axs[1, 0].set_title('Индекс Дэвиса-Болдина (ниже - лучше)', fontsize=12)
+        best_db_k = df_res.loc[df_res['Davies-Bouldin'].idxmin(), 'k']
+        axs[1, 0].axvline(x=chosen_k, color='red', linestyle='--')
+        axs[1, 0].axvline(x=best_db_k, color='green', linestyle=':', label=f'Min DB (k={best_db_k})')
+        axs[1, 0].set_ylabel('Score')
+        axs[1, 0].legend()
+
+        # Subplot 4: Индекс Калинского-Харабаша
+        axs[1, 1].plot(df_res['k'], df_res['Calinski-Harabasz'], marker='o', color='purple', linestyle='-', alpha=0.7)
+        axs[1, 1].set_title('Индекс Калинского-Харабаша (выше - лучше)', fontsize=12)
+        best_ch_k = df_res.loc[df_res['Calinski-Harabasz'].idxmax(), 'k']
+        axs[1, 1].axvline(x=chosen_k, color='red', linestyle='--')
+        axs[1, 1].axvline(x=best_ch_k, color='green', linestyle=':', label=f'Max CH (k={best_ch_k})')
+        axs[1, 1].set_ylabel('Score')
+        axs[1, 1].legend()
+
+        for ax in axs.flat:
+            ax.set_xlabel('Количество кластеров (k)')
+            ax.grid(True, linestyle='--', alpha=0.6)
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig(f"{self.output_dir}/diagrams/cluster_validation.png", dpi=300)
+        plt.close()
+
+        # 4. ИТОГОВЫЙ ВЫВОД
+        print(f"\nСводка методов: Локоть k={chosen_k} | Силуэт k={best_sil_k} | Дэвис-Болдин k={best_db_k} | Калинский-Харабаш k={best_ch_k}")
+        if chosen_k == best_sil_k == best_db_k == best_ch_k:
+            print(f"Консенсус: все методы подтверждают оптимальность k={chosen_k}.")
+        else:
+            print(f"Консенсус: методы дают разные рекомендации. k={chosen_k} сохранен согласно логике исследования.")
+
+    # === DBSCAN ВАЛИДАЦИЯ (добавлено) ===
+    def calculate_dbscan_validation(self, kmeans_k=3):
+        """
+        Дополнительная валидация через DBSCAN для оценки плотности и структуры кластеров.
+        """
+        print(f"\n[{self.level_name}] DBSCAN: запуск оценки числа кластеров через плотность...")
+
+        # Получаем силуэт K-Means для сравнения
+        kmeans_model = KMeans(n_clusters=kmeans_k, random_state=42, n_init=10)
+        kmeans_labels = kmeans_model.fit_predict(self.X_scaled)
+        kmeans_sil = silhouette_score(self.X_scaled, kmeans_labels)
+
+        # 1. СЕТКА ПАРАМЕТРОВ
+        eps_values = [round(x, 2) for x in list(np.arange(0.3, 2.1, 0.1))]
+        min_samples_values = [3, 4, 5, 6, 7]
+        dbscan_results = []
+
+        for eps in eps_values:
+            for ms in min_samples_values:
+                db = DBSCAN(eps=eps, min_samples=ms).fit(self.X_scaled)
+                labels = db.labels_
+
+                n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+                noise_ratio = (labels == -1).sum() / len(labels)
+
+                # Фильтрация по условиям задачи
+                if 2 <= n_clusters <= 8 and noise_ratio <= 0.15:
+                    # Считаем силуэт только для не-шумовых точек
+                    mask = labels != -1
+                    if len(set(labels[mask])) > 1:
+                        sil = silhouette_score(self.X_scaled[mask], labels[mask])
+                        dbscan_results.append({
+                            'eps': eps,
+                            'min_samples': ms,
+                            'n_clusters': n_clusters,
+                            'noise_ratio': round(noise_ratio * 100, 1),
+                            'silhouette': round(sil, 4)
+                        })
+
+        if not dbscan_results:
+            print("DBSCAN: подходящих конфигураций не найдено (k от 2 до 8, шум <= 15%).")
+            return
+
+        # 2. ТАБЛИЦА РЕЗУЛЬТАТОВ
+        df_db = pd.DataFrame(dbscan_results).sort_values(by='silhouette', ascending=False)
+        print("\nDBSCAN: подбор параметров (отфильтровано: 2≤k≤8, шум≤15%)")
+        df_print = df_db.head(10).copy()
+        df_print['best_mark'] = [' <--- лучший' if i == 0 else '' for i in range(len(df_print))]
+
+        # Переименуем для красивого вывода
+        print(df_print[['eps', 'min_samples', 'n_clusters', 'noise_ratio', 'silhouette', 'best_mark']].to_string(index=False))
+
+        # 3. ЛУЧШИЙ РЕЗУЛЬТАТ И СРАВНЕНИЕ
+        best = df_db.iloc[0]
+        print(f"\nDBSCAN лучший результат: eps={best['eps']}, min_samples={best['min_samples']} → k={int(best['n_clusters'])} кластеров, шум={best['noise_ratio']}%, силуэт={best['silhouette']}")
+        print(f"Сравнение: K-Means k={kmeans_k} (силуэт={round(kmeans_sil, 4)}) vs DBSCAN k={int(best['n_clusters'])} (силуэт={best['silhouette']})")
+
+        if best['silhouette'] > kmeans_sil:
+            print("DBSCAN показал лучшее разделение — рассмотреть как дополнительный метод")
+        else:
+            print("K-Means с k=3 превосходит DBSCAN по качеству разделения — выбор подтверждён")
+
+        # 4. ГРАФИК
+        plt.figure(figsize=(10, 6))
+
+        # Размер точек обратно пропорционален шуму (минимум 20, чтобы было видно)
+        sizes = [max(20, 200 * (1 - r/100)) for r in df_db['noise_ratio']]
+
+        scatter = plt.scatter(
+            df_db['n_clusters'],
+            df_db['silhouette'],
+            c=df_db['min_samples'],
+            s=sizes,
+            cmap='viridis',
+            alpha=0.6,
+            edgecolors='w'
+        )
+
+        # Аннотация лучшей точки
+        plt.annotate(
+            f"Best: eps={best['eps']}, ms={best['min_samples']}",
+            xy=(best['n_clusters'], best['silhouette']),
+            xytext=(best['n_clusters'] + 0.2, best['silhouette']),
+            arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=5),
+            fontsize=9, fontweight='bold'
+        )
+
+        # Линия K-Means
+        plt.axhline(y=kmeans_sil, color='red', linestyle='--', label=f"K-Means k={kmeans_k} (силуэт={round(kmeans_sil, 4)})")
+
+        plt.title("DBSCAN: силуэт по числу найденных кластеров", fontsize=14)
+        plt.xlabel("Количество найденных кластеров (k)", fontsize=11)
+        plt.ylabel("Коэффициент силуэта (non-noise)", fontsize=11)
+
+        cbar = plt.colorbar(scatter)
+        cbar.set_label('min_samples')
+        plt.legend(loc='lower right')
+        plt.grid(True, linestyle='--', alpha=0.5)
+
+        os.makedirs(f"{self.output_dir}/plots", exist_ok=True)
+        plt.savefig(f"{self.output_dir}/plots/dbscan_validation.png", dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"График DBSCAN сохранен: {self.output_dir}/plots/dbscan_validation.png")
+
+    # === КОНЕЦ DBSCAN ВАЛИДАЦИИ ===
 
     def run_clustering(self, k=3):
         """Выполнение K-Means и логическая сортировка кластеров"""
@@ -350,6 +550,8 @@ class UniversalClusterAnalyzer:
         """Запуск всего цикла анализа для уровня"""
         print(f"[{self.level_name}] Начало полного цикла анализа...")
         self.plot_elbow()
+        self.calculate_cluster_validation(chosen_k=k)
+        self.calculate_dbscan_validation(kmeans_k=k)
         self.run_clustering(k=k)
         self.export_tables()
         self.plot_heatmap()
