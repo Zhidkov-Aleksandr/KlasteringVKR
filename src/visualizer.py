@@ -74,8 +74,8 @@ class Visualizer:
         plt.xlabel('Показатели цифровизации')
         plt.ylabel('Кластеры')
 
-        # Поворачиваем подписи оси X, чтобы длинные названия показателей не сливались
-        plt.xticks(rotation=45, ha='right')
+        # Поворачиваем подписи оси X вертикально
+        plt.xticks(rotation=90, ha='center')
 
         filepath = self._get_path(subfolder, 'heatmap.png')
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
