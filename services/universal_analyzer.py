@@ -50,13 +50,12 @@ class UniversalClusterAnalyzer:
             
             # Проверка на "обработанный" файл
             if len(sheet_names) == 1:
-                df_sheet = pd.read_excel(xls, sheet_names[0], header=None, nrows=15)
-                # Ищем "федеральный округ" где-нибудь в первых строках
+                df_sheet = pd.read_excel(xls, sheet_names[0], header=None, nrows=25)
                 found = False
-                for r in range(min(15, len(df_sheet))):
-                    for c in range(min(5, len(df_sheet.columns))):
+                for r in range(min(25, len(df_sheet))):
+                    for c in range(min(10, len(df_sheet.columns))):
                         val = str(df_sheet.iloc[r, c]).lower()
-                        if "федеральный округ" in val:
+                        if "центральный федеральный округ" in val:
                             found = True
                             break
                     if found: break
@@ -68,16 +67,30 @@ class UniversalClusterAnalyzer:
             available_years = []
             for sheet_name in sheet_names:
                 try:
-                    df_head = pd.read_excel(xls, sheet_name=sheet_name, header=None, nrows=10)
+                    df_head = pd.read_excel(xls, sheet_name=sheet_name, header=None, nrows=50)
+                    has_cfo = False
+                    sheet_years = []
+                    
                     for r in range(len(df_head)):
-                        for c in range(min(5, len(df_head.columns))):
-                            val = str(df_head.iloc[r, c]).lower()
-                            if "малым" in val and "предприяти" in val:
-                                match = re.search(r'\b(20\d{2})\b', val)
-                                if match:
-                                    y = int(match.group(1))
-                                    if y not in available_years:
-                                        available_years.append(y)
+                        for c in range(min(10, len(df_head.columns))):
+                            val = str(df_head.iloc[r, c])
+                            
+                            if not has_cfo:
+                                val_lower = re.sub(r'\s+', ' ', val.lower()).strip()
+                                if "центральный федеральный округ" in val_lower:
+                                    has_cfo = True
+                                    
+                            if r < 15:
+                                years = re.findall(r'\b(20\d{2})\b', val)
+                                for y_str in years:
+                                    y = int(y_str)
+                                    if y not in sheet_years:
+                                        sheet_years.append(y)
+                                        
+                    if has_cfo and sheet_years:
+                        for y in sheet_years:
+                            if y not in available_years:
+                                available_years.append(y)
                 except Exception:
                     continue
             

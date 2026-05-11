@@ -146,6 +146,15 @@ if 'selected_year' not in st.session_state:
     st.session_state.selected_year = 2024
 if 'file_type' not in st.session_state:
     st.session_state.file_type = "unknown"
+if 'data_source' not in st.session_state:
+    st.session_state.data_source = None
+if 'last_uploaded_file' not in st.session_state:
+    st.session_state.last_uploaded_file = None
+
+# Функция для установки выбранного года
+def set_selected_year():
+    if "year_selectbox" in st.session_state:
+        st.session_state.selected_year = st.session_state.year_selectbox
 
 # Основной контент
 col_settings, col_modules, col_logs = st.columns([1.2, 1, 1.8], gap="medium")
@@ -159,33 +168,47 @@ with col_settings:
     with data_source_tab1:
         uploaded_file = st.file_uploader("Выберите Excel файл (.xlsx)", type=["xlsx", "xls"], label_visibility="collapsed")
         
-        if uploaded_file is not None:
+        # Если файл загружен и он новый (или переключились на загрузку файла)
+        if uploaded_file is not None and (st.session_state.data_source != "upload" or st.session_state.last_uploaded_file != uploaded_file.name):
+            st.session_state.data_source = "upload"
+            st.session_state.last_uploaded_file = uploaded_file.name
             st.session_state.file_path = "temp_uploaded_data.xlsx"
             with open(st.session_state.file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
                 
-            # Инспектируем файл
             inspection_result = UniversalClusterAnalyzer.inspect_file(st.session_state.file_path)
             st.session_state.file_type = inspection_result["file_type"]
+            st.session_state.available_years = inspection_result["available_years"]
             
             if inspection_result["file_type"] == "error":
-                st.error("❌ Ошибка при чтении файла. Убедитесь, что это корректный Excel-документ.")
                 st.session_state.file_is_ready = False
             else:
-                st.success("✅ Файл успешно загружен!")
                 st.session_state.file_is_ready = True
-                st.session_state.available_years = inspection_result["available_years"]
-                
-                if inspection_result["file_type"] == "raw":
-                    st.info("ℹ️ Обнаружен исходный файл Росстата.")
+                if inspection_result["file_type"] == "raw" and st.session_state.available_years:
+                    st.session_state.selected_year = max(st.session_state.available_years)
                 elif inspection_result["file_type"] == "processed":
+                    st.session_state.selected_year = 2024
+        
+        # Если пользователь удалил файл (клик по крестику)
+        elif uploaded_file is None and st.session_state.data_source == "upload":
+            st.session_state.file_is_ready = False
+            st.session_state.data_source = None
+            st.session_state.last_uploaded_file = None
+            st.session_state.file_type = "unknown"
+            st.session_state.available_years = []
+
+        # Отображение статуса загрузки для файла
+        if st.session_state.data_source == "upload":
+            if st.session_state.file_type == "error":
+                st.error("❌ Ошибка при чтении файла. Убедитесь, что это корректный Excel-документ.")
+            else:
+                st.success("✅ Файл успешно загружен!")
+                if st.session_state.file_type == "raw":
+                    st.info("ℹ️ Обнаружен исходный файл Росстата.")
+                elif st.session_state.file_type == "processed":
                     st.info("ℹ️ Обнаружен подготовленный файл.")
-                    st.session_state.selected_year = 2024 # Дефолт
                 else:
                     st.warning("⚠️ Неизвестный формат файла. Попытка чтения может завершиться ошибкой.")
-                    
-        else:
-            st.session_state.file_is_ready = False
 
     with data_source_tab2:
         st.markdown("<div style='font-size: 0.9em; margin-bottom: 5px;'>URL исходного Excel файла:</div>", unsafe_allow_html=True)
@@ -195,51 +218,66 @@ with col_settings:
         if download_btn and url_input:
             with st.spinner("Скачивание файла..."):
                 try:
-                    # Добавляем verify=False для обхода ошибки SSL сертификата Росстата
                     response = requests.get(url_input, timeout=15, verify=False)
-                    response.raise_for_status() # Проверка на ошибки HTTP
+                    response.raise_for_status()
                     
                     st.session_state.file_path = "temp_uploaded_data.xlsx"
                     with open(st.session_state.file_path, "wb") as f:
                         f.write(response.content)
                     
-                    # Инспектируем файл
+                    st.session_state.data_source = "url"
+                    st.session_state.last_uploaded_file = None
+                    
                     inspection_result = UniversalClusterAnalyzer.inspect_file(st.session_state.file_path)
                     st.session_state.file_type = inspection_result["file_type"]
+                    st.session_state.available_years = inspection_result["available_years"]
                     
                     if inspection_result["file_type"] == "error":
-                        st.error("❌ Ошибка при чтении скачанного файла. Возможно, по ссылке не Excel-документ.")
                         st.session_state.file_is_ready = False
                     else:
-                        st.success("✅ Файл успешно скачан и готов к работе!")
                         st.session_state.file_is_ready = True
-                        st.session_state.available_years = inspection_result["available_years"]
-                        
                         st.session_state.log_text += f"[{time.strftime('%H:%M:%S')}] Файл скачан с источника.\n"
-                        
-                        if inspection_result["file_type"] == "raw":
-                            st.info("ℹ️ Распознан исходный формат данных.")
+                        if inspection_result["file_type"] == "raw" and st.session_state.available_years:
+                            st.session_state.selected_year = max(st.session_state.available_years)
                         elif inspection_result["file_type"] == "processed":
-                            st.info("ℹ️ Распознан подготовленный формат данных.")
                             st.session_state.selected_year = 2024
                             
                 except requests.exceptions.RequestException as e:
                     st.error(f"❌ Ошибка скачивания: {e}")
                     st.session_state.file_is_ready = False
+                    st.session_state.file_type = "error"
+
+        # Отображение статуса для URL
+        if st.session_state.data_source == "url":
+            if st.session_state.file_type == "error":
+                st.error("❌ Ошибка при чтении скачанного файла.")
+            else:
+                st.success("✅ Файл успешно скачан и готов к работе!")
+                if st.session_state.file_type == "raw":
+                    st.info("ℹ️ Распознан исходный формат данных.")
+                elif st.session_state.file_type == "processed":
+                    st.info("ℹ️ Распознан подготовленный формат данных.")
 
     st.markdown("---")
     st.markdown("**📅 Параметры анализа**")
     
-    # Если найдены годы в файле и файл сырой, предлагаем выбрать
+    # Выбор года
     if st.session_state.file_is_ready and st.session_state.file_type == "raw" and st.session_state.available_years:
-        selected_year = st.selectbox("Выберите год для анализа:", st.session_state.available_years)
-        st.session_state.selected_year = selected_year
+        if st.session_state.selected_year not in st.session_state.available_years:
+            st.session_state.selected_year = max(st.session_state.available_years)
+            
+        index_of_selected = st.session_state.available_years.index(st.session_state.selected_year)
+        
+        st.selectbox("Выберите год для анализа:", 
+                     st.session_state.available_years, 
+                     index=index_of_selected,
+                     key="year_selectbox",
+                     on_change=set_selected_year)
     elif st.session_state.file_is_ready and st.session_state.file_type == "processed":
         st.info("В подготовленном файле используется текущий год (2024). Выбор отключен.")
         st.session_state.selected_year = 2024
     elif st.session_state.file_is_ready:
-         # Если файл неизвестен
-         selected_year = st.number_input("Год актуальности данных:", min_value=2000, max_value=2100, value=2024)
+         selected_year = st.number_input("Год актуальности данных:", min_value=2000, max_value=2100, value=st.session_state.selected_year)
          st.session_state.selected_year = selected_year
     else:
         st.info("Загрузите данные, чтобы выбрать год.")
