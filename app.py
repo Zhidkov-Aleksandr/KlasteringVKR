@@ -3,11 +3,16 @@ import os
 import io
 import shutil
 import time
+import requests
+import urllib3
 from contextlib import redirect_stdout
 from PIL import Image
 import pandas as pd
 import sqlite3
 import streamlit.components.v1 as components
+
+# Отключаем предупреждения InsecureRequestWarning
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Импорты бизнес-логики
 from models.data_service import DistrictDataLoader
@@ -15,41 +20,28 @@ from services.universal_analyzer import UniversalClusterAnalyzer
 from models.database import DB_NAME
 from utils.test_runner import run_project_tests
 
-# Настройка страницы (добавляем скрытие сайдбара на уровне конфига)
+# Настройка страницы
 st.set_page_config(
     page_title="Анализ цифровизации РФ",
     page_icon="🇷🇺",
     layout="wide",
-    initial_sidebar_state="collapsed" # Сворачиваем сайдбар
+    initial_sidebar_state="collapsed"
 )
 
 # Кастомный CSS для скрытия системных элементов Streamlit и стилизации (Светлая тема)
 hide_streamlit_style = """
 <style>
-    /* Скрываем гамбургер-меню в правом верхнем углу */
     #MainMenu {visibility: hidden;}
-    /* Скрываем футер "Made with Streamlit" */
     footer {visibility: hidden;}
-    /* Скрываем хедер (полоску сверху) */
     header {visibility: hidden;}
-
-    /* Полностью скрываем боковую панель Streamlit и кнопку ее открытия */
     [data-testid="collapsedControl"] { display: none !important; }
     section[data-testid="stSidebar"] { display: none !important; }
-
-    /* Сдвигаем основной контент вверх, убирая пустой отступ */
     .block-container {
         padding-top: 1rem !important;
         max-width: 1400px;
     }
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Сдвигаем главный заголовок выше */
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .main-header {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         color: white;
@@ -60,7 +52,6 @@ hide_streamlit_style = """
         text-align: center;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    
     .main-title {
         font-size: 2.5rem;
         font-weight: 800;
@@ -68,15 +59,12 @@ hide_streamlit_style = """
         padding: 0;
         letter-spacing: -0.5px;
     }
-    
     .sub-title {
         font-size: 1.1rem;
         font-weight: 400;
         opacity: 0.9;
         margin-top: 0.5rem;
     }
-    
-    /* Стилизация кнопок - убрали нижний марджин, чтобы не было пустых мест */
     .stButton>button {
         width: 100%;
         border-radius: 8px;
@@ -87,18 +75,15 @@ hide_streamlit_style = """
         border: 1px solid #e2e8f0;
         background-color: white;
         color: #1e293b;
-        margin-bottom: 12px; /* Расстояние между кнопками вместо пустых карточек */
+        margin-bottom: 12px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    
     .stButton>button:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
         border-color: #3b82f6;
         color: #2563eb;
     }
-    
-    /* Стилизация консоли логов (Светлая тема) */
     .console-box {
         background-color: #f1f5f9;
         color: #0f172a;
@@ -106,14 +91,13 @@ hide_streamlit_style = """
         font-size: 0.85rem;
         padding: 1.5rem;
         border-radius: 12px;
-        height: 380px;
+        height: 480px;
         overflow-y: auto;
         border: 1px solid #cbd5e1;
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         line-height: 1.6;
         white-space: pre-wrap;
     }
-
     .section-title {
         color: #1e293b;
         font-weight: 600;
@@ -122,8 +106,6 @@ hide_streamlit_style = """
         border-bottom: 2px solid #e2e8f0;
         padding-bottom: 0.5rem;
     }
-    
-    /* Убираем пустые label_visibility="collapsed" отступы */
     div[data-testid="stFileUploader"] { margin-bottom: 1rem; }
     div[data-testid="stSelectbox"] { margin-bottom: 1rem; }
     div.row-widget.stButton { margin-bottom: 0.5rem; }
@@ -139,65 +121,136 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# При инициализации очищаем состояние, чтобы старые файлы не подхватывались автоматически
+# Инициализация состояний
 if 'app_initialized' not in st.session_state:
     st.session_state.app_initialized = True
-    st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
-    # Удаляем временный файл чтобы заставить грузить новый
+    st.session_state.log_text = "Система готова к работе. Выберите способ загрузки данных...\n"
     if os.path.exists("temp_uploaded_data.xlsx"):
-        try:
-            os.remove("temp_uploaded_data.xlsx")
-        except:
-            pass
-    # Очищаем старые результаты
+        try: os.remove("temp_uploaded_data.xlsx")
+        except: pass
     for folder in ["output/districts", "output/regions", "output/all_regions"]:
         if os.path.exists(folder):
-            try:
-                shutil.rmtree(folder)
-            except:
-                pass
+            try: shutil.rmtree(folder)
+            except: pass
 
 if 'log_text' not in st.session_state:
-    st.session_state.log_text = "Система готова к работе. Ожидание загрузки данных...\n"
+    st.session_state.log_text = "Система готова к работе. Выберите способ загрузки данных...\n"
 
-# Основной контент разбит на 3 колонки: [Настройки] [Модули] [Логи]
-col_settings, col_modules, col_logs = st.columns([1, 1, 1.8], gap="medium")
+if 'file_is_ready' not in st.session_state:
+    st.session_state.file_is_ready = False
+if 'file_path' not in st.session_state:
+    st.session_state.file_path = None
+if 'available_years' not in st.session_state:
+    st.session_state.available_years = []
+if 'selected_year' not in st.session_state:
+    st.session_state.selected_year = 2024
+if 'file_type' not in st.session_state:
+    st.session_state.file_type = "unknown"
+
+# Основной контент
+col_settings, col_modules, col_logs = st.columns([1.2, 1, 1.8], gap="medium")
 
 with col_settings:
-    st.markdown('<div class="section-title">⚙️ Параметры</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">⚙️ Источник данных</div>', unsafe_allow_html=True)
     
-    st.markdown("**📁 Исходные данные**")
+    # Tabs для выбора источника данных
+    data_source_tab1, data_source_tab2 = st.tabs(["📁 Загрузка файла", "🌐 Загрузка по ссылке"])
     
-    uploaded_file = st.file_uploader("", type=["xlsx", "xls"], label_visibility="collapsed")
+    with data_source_tab1:
+        uploaded_file = st.file_uploader("Выберите Excel файл (.xlsx)", type=["xlsx", "xls"], label_visibility="collapsed")
+        
+        if uploaded_file is not None:
+            st.session_state.file_path = "temp_uploaded_data.xlsx"
+            with open(st.session_state.file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+                
+            # Инспектируем файл
+            inspection_result = UniversalClusterAnalyzer.inspect_file(st.session_state.file_path)
+            st.session_state.file_type = inspection_result["file_type"]
+            
+            if inspection_result["file_type"] == "error":
+                st.error("❌ Ошибка при чтении файла. Убедитесь, что это корректный Excel-документ.")
+                st.session_state.file_is_ready = False
+            else:
+                st.success("✅ Файл успешно загружен!")
+                st.session_state.file_is_ready = True
+                st.session_state.available_years = inspection_result["available_years"]
+                
+                if inspection_result["file_type"] == "raw":
+                    st.info("ℹ️ Обнаружен исходный файл Росстата.")
+                elif inspection_result["file_type"] == "processed":
+                    st.info("ℹ️ Обнаружен подготовленный файл.")
+                    st.session_state.selected_year = 2024 # Дефолт
+                else:
+                    st.warning("⚠️ Неизвестный формат файла. Попытка чтения может завершиться ошибкой.")
+                    
+        else:
+            st.session_state.file_is_ready = False
+
+    with data_source_tab2:
+        st.markdown("<div style='font-size: 0.9em; margin-bottom: 5px;'>URL исходного Excel файла:</div>", unsafe_allow_html=True)
+        url_input = st.text_input("URL", value="https://rosstat.gov.ru/storage/mediabank/3inf_MP_2024.xlsx", label_visibility="collapsed")
+        download_btn = st.button("📥 Скачать и проанализировать файл", key="btn_download")
+        
+        if download_btn and url_input:
+            with st.spinner("Скачивание файла..."):
+                try:
+                    # Добавляем verify=False для обхода ошибки SSL сертификата Росстата
+                    response = requests.get(url_input, timeout=15, verify=False)
+                    response.raise_for_status() # Проверка на ошибки HTTP
+                    
+                    st.session_state.file_path = "temp_uploaded_data.xlsx"
+                    with open(st.session_state.file_path, "wb") as f:
+                        f.write(response.content)
+                    
+                    # Инспектируем файл
+                    inspection_result = UniversalClusterAnalyzer.inspect_file(st.session_state.file_path)
+                    st.session_state.file_type = inspection_result["file_type"]
+                    
+                    if inspection_result["file_type"] == "error":
+                        st.error("❌ Ошибка при чтении скачанного файла. Возможно, по ссылке не Excel-документ.")
+                        st.session_state.file_is_ready = False
+                    else:
+                        st.success("✅ Файл успешно скачан и готов к работе!")
+                        st.session_state.file_is_ready = True
+                        st.session_state.available_years = inspection_result["available_years"]
+                        
+                        st.session_state.log_text += f"[{time.strftime('%H:%M:%S')}] Файл скачан с источника.\n"
+                        
+                        if inspection_result["file_type"] == "raw":
+                            st.info("ℹ️ Распознан исходный формат данных.")
+                        elif inspection_result["file_type"] == "processed":
+                            st.info("ℹ️ Распознан подготовленный формат данных.")
+                            st.session_state.selected_year = 2024
+                            
+                except requests.exceptions.RequestException as e:
+                    st.error(f"❌ Ошибка скачивания: {e}")
+                    st.session_state.file_is_ready = False
+
+    st.markdown("---")
+    st.markdown("**📅 Параметры анализа**")
     
-    file_path = None
-    file_is_ready = False
-    
-    if uploaded_file is not None:
-        file_path = "temp_uploaded_data.xlsx"
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        file_is_ready = True
-        st.success("✅ Данные загружены")
-        if "Ожидание загрузки данных" in st.session_state.log_text:
-            st.session_state.log_text = "Данные загружены. Выберите модуль аналитики для запуска...\n"
+    # Если найдены годы в файле и файл сырой, предлагаем выбрать
+    if st.session_state.file_is_ready and st.session_state.file_type == "raw" and st.session_state.available_years:
+        selected_year = st.selectbox("Выберите год для анализа:", st.session_state.available_years)
+        st.session_state.selected_year = selected_year
+    elif st.session_state.file_is_ready and st.session_state.file_type == "processed":
+        st.info("В подготовленном файле используется текущий год (2024). Выбор отключен.")
+        st.session_state.selected_year = 2024
+    elif st.session_state.file_is_ready:
+         # Если файл неизвестен
+         selected_year = st.number_input("Год актуальности данных:", min_value=2000, max_value=2100, value=2024)
+         st.session_state.selected_year = selected_year
     else:
-        st.warning("⚠️ Ожидание данных")
-        file_is_ready = False
-        if os.path.exists("temp_uploaded_data.xlsx"):
-            try:
-                os.remove("temp_uploaded_data.xlsx")
-            except Exception:
-                pass
+        st.info("Загрузите данные, чтобы выбрать год.")
 
 with col_modules:
-    st.markdown('<div class="section-title">🔎 Аналитика</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🔎 Запуск модулей</div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True) 
-    # Используем use_container_width=True для всех кнопок
-    dist_btn = st.button("🌍 Макро-анализ (Все ФО)", key="btn1", disabled=not file_is_ready, use_container_width=True)
-    reg_btn = st.button("🗺️ Мезо-анализ (Внутри каждого ФО)", key="btn2", disabled=not file_is_ready, use_container_width=True)
-    all_reg_btn = st.button("🇷🇺 Микро-анализ (Все регионы РФ)", key="btn3", disabled=not file_is_ready, use_container_width=True)
+    dist_btn = st.button("🌍 Макро-анализ (Все ФО)", key="btn1", disabled=not st.session_state.file_is_ready)
+    reg_btn = st.button("🗺️ Мезо-анализ (Внутри каждого ФО)", key="btn2", disabled=not st.session_state.file_is_ready)
+    all_reg_btn = st.button("🇷🇺 Микро-анализ (Все регионы РФ)", key="btn3", disabled=not st.session_state.file_is_ready)
 
 with col_logs:
     st.markdown('<div class="section-title">🖥️ Журнал</div>', unsafe_allow_html=True)
@@ -209,51 +262,41 @@ with col_logs:
     render_log(st.session_state.log_text)
 
 
-# Фиксированный год для базы данных
-DEFAULT_YEAR = 2024
-
-# Инициализация флагов для принудительного обновления UI
 if 'update_key' not in st.session_state:
     st.session_state.update_key = 0
 
-# Обработка нажатий
 def process_analysis(level_name, process_func):
-    st.session_state.log_text = f"[{time.strftime('%H:%M:%S')}] Инициализация модуля: {level_name}...\n"
+    target_year = st.session_state.selected_year
+    st.session_state.log_text += f"[{time.strftime('%H:%M:%S')}] Инициализация модуля: {level_name} (Год: {target_year})...\n"
     render_log(st.session_state.log_text)
     
     progress_bar = st.progress(0)
     
     try:
-        # Сначала загружаем данные в БД (это общее для всех уровней)
         with io.StringIO() as buf, redirect_stdout(buf):
-            data_loader = DistrictDataLoader(file_path)
-            data_loader.load_data(DEFAULT_YEAR) 
-        
-        # Выполняем саму логику уровня
+            data_loader = DistrictDataLoader(st.session_state.file_path)
+            data_loader.load_data(target_year) 
+            
         with io.StringIO() as buf, redirect_stdout(buf):
-            process_func(DEFAULT_YEAR)
+            process_func(target_year)
             output = buf.getvalue()
             
-        st.session_state.log_text += output + f"\n[{time.strftime('%H:%M:%S')}] ✅ Модуль '{level_name}' успешно отработал."
+        st.session_state.log_text += output + f"\n[{time.strftime('%H:%M:%S')}] ✅ Модуль '{level_name}' успешно отработал.\n"
         render_log(st.session_state.log_text)
         progress_bar.progress(100)
         
         st.toast(f"Анализ '{level_name}' завершен!", icon="🎉")
-        
-        # Увеличиваем ключ, чтобы Streamlit принудительно перерисовал блок с результатами
         st.session_state.update_key += 1
         
     except Exception as e:
         progress_bar.empty()
-        st.session_state.log_text += f"\n[{time.strftime('%H:%M:%S')}] ❌ ОШИБКА: {str(e)}"
+        st.session_state.log_text += f"\n[{time.strftime('%H:%M:%S')}] ❌ ОШИБКА: {str(e)}\n"
         render_log(st.session_state.log_text)
         st.error(f"Критическая ошибка выполнения: {str(e)}")
 
 # --- УНИВЕРСАЛЬНЫЕ ФУНКЦИИ ЗАПУСКА АНАЛИЗА ---
-
 def run_level_1(year):
     print(f"Запуск макро-анализа (Федеральные округа)...")
-    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/districts"): shutil.rmtree("output/districts")
     
     conn = sqlite3.connect(DB_NAME)
@@ -267,31 +310,30 @@ def run_level_1(year):
     df = pd.read_sql_query(query, conn, params=(year,))
     conn.close()
 
+    if df.empty:
+        print(f"ВНИМАНИЕ: Нет данных для макро-анализа за {year} год.")
+        return
+
     matrix = df.pivot(index="district", columns="indicator", values="value")
-    
-    analyzer = UniversalClusterAnalyzer(
-        data=matrix, 
-        output_dir="output/districts", 
-        level_name="Федеральные округа РФ"
-    )
+    analyzer = UniversalClusterAnalyzer(data=matrix, output_dir="output/districts", level_name=f"Федеральные округа РФ ({year})")
     analyzer.run_all(k=3)
 
-
 def run_level_2(year):
-    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/regions"): shutil.rmtree("output/regions")
-
     print(f"Запуск мезо-анализа (Регионы по ФО)...")
+    
     conn = sqlite3.connect(DB_NAME)
     districts = pd.read_sql("SELECT id, name FROM federal_districts", conn)
-
+    
     all_meso_results = []
-    elbow_data_dict = {}  # Store elbow data for all districts
+    elbow_data_dict = {}
+    
+    data_found = False
 
     for _, district in districts.iterrows():
         d_id = district["id"]
         d_name = district["name"]
-
+        
         query = f"""
         SELECT r.name as region, i.name as indicator, v.value
         FROM values_data v
@@ -301,60 +343,47 @@ def run_level_2(year):
         """
         df = pd.read_sql(query, conn)
         if df.empty: continue
-
+        data_found = True
+        
         matrix = df.pivot(index="region", columns="indicator", values="value")
-
+        
         d_name_safe = d_name.replace(" ", "_")
         analyzer = UniversalClusterAnalyzer(
             data=matrix,
             output_dir=f"output/regions/{d_name_safe}",
-            level_name=d_name
+            level_name=f"{d_name} ({year})"
         )
         analyzer.run_all(k=3)
-
-        # Collect elbow data for global comparison
+        
         if analyzer.elbow_K is not None and analyzer.elbow_distortions is not None:
             elbow_data_dict[d_name] = (analyzer.elbow_K, analyzer.elbow_distortions)
-
-        # Сбор данных для глобального сравнения
+            
         if analyzer.cluster_means is not None:
             means_copy = analyzer.cluster_means.copy()
             means_copy['Округ'] = d_name
             means_copy['Кластер'] = means_copy.index
             means_copy['Описание кластера'] = means_copy.index.map(analyzer.cluster_names_map)
             all_meso_results.append(means_copy)
-
+        
     conn.close()
-
+    
+    if not data_found:
+        print(f"ВНИМАНИЕ: Нет данных для мезо-анализа за {year} год.")
+        return
+    
     if all_meso_results:
         combined_df = pd.concat(all_meso_results, ignore_index=True)
-        UniversalClusterAnalyzer.plot_meso_comparison(
-            combined_df,
-            "output/regions/global_meso_comparison.png"
-        )
-        UniversalClusterAnalyzer.plot_meso_comparison_interactive(
-            combined_df,
-            "output/regions/global_meso_comparison.html"
-        )
-        UniversalClusterAnalyzer.plot_meso_comparison_radar(
-            combined_df,
-            "output/regions/global_meso_comparison_radar.png"
-        )
-
-    # Generate global elbow method comparison
+        UniversalClusterAnalyzer.plot_meso_comparison(combined_df, "output/regions/global_meso_comparison.png")
+        UniversalClusterAnalyzer.plot_meso_comparison_interactive(combined_df, "output/regions/global_meso_comparison.html")
+        UniversalClusterAnalyzer.plot_meso_comparison_radar(combined_df, "output/regions/global_meso_comparison_radar.png")
+        
     if elbow_data_dict:
-        UniversalClusterAnalyzer.plot_meso_elbow_comparison(
-            elbow_data_dict,
-            "output/regions/global_meso_elbow_method.png"
-        )
+        UniversalClusterAnalyzer.plot_meso_elbow_comparison(elbow_data_dict, "output/regions/global_meso_elbow_method.png")
 
-    print("Мезо-анализ по всем федеральным округам завершен.")
-
+    print(f"Мезо-анализ по всем федеральным округам за {year} год завершен.")
 
 def run_level_3(year):
-    # Полностью очищаем папку перед новым запуском
     if os.path.exists("output/all_regions"): shutil.rmtree("output/all_regions")
-        
     print(f"Запуск микро-анализа (Все субъекты РФ)...")
     
     conn = sqlite3.connect(DB_NAME)
@@ -368,16 +397,19 @@ def run_level_3(year):
     df = pd.read_sql_query(query, conn, params=(year,))
     conn.close()
 
+    if df.empty:
+        print(f"ВНИМАНИЕ: Нет данных для микро-анализа за {year} год.")
+        return
+
     matrix = df.pivot(index="region", columns="indicator", values="value")
-    
     analyzer = UniversalClusterAnalyzer(
         data=matrix, 
         output_dir="output/all_regions", 
-        level_name="Все субъекты РФ"
+        level_name=f"Все субъекты РФ ({year})"
     )
     analyzer.run_all(k=3)
 
-# Запуск
+# Обработчики кнопок
 if dist_btn: process_analysis("Макроуровень (ФО)", run_level_1)
 if reg_btn: process_analysis("Мезоуровень (Внутри ФО)", run_level_2)
 if all_reg_btn: process_analysis("Микроуровень (Глобальный)", run_level_3)
@@ -392,43 +424,29 @@ st.caption("Разверните вкладки ниже, чтобы просм�
 tab1, tab2, tab3, tab4 = st.tabs(["🌍 Федеральные округа (Макро)", "🗺️ Регионы по округам (Мезо)", "🇷🇺 Все субъекты РФ (Микро)", "🛠️ Тестирование"])
 
 def render_level_data(folder_path, prefix="", unique_key=""):
-    """
-    Универсальная функция рендеринга всех артефактов для одного датасета.
-    """
+    """Универсальная функция рендеринга всех артефактов для одного датасета."""
     excel_files, images, html_files = {}, {}, {}
     
-    # Собираем все файлы, индексируя их по имени для удобства
     for root, _, files in os.walk(folder_path):
         for file in files:
             full_path = os.path.join(root, file)
-            if file.endswith('.xlsx'):
-                excel_files[file] = full_path
-            elif file.endswith(('.png', '.jpg', '.jpeg')):
-                images[file] = full_path
-            elif file.endswith('.html'):
-                html_files[file] = full_path
+            if file.endswith('.xlsx'): excel_files[file] = full_path
+            elif file.endswith(('.png', '.jpg', '.jpeg')): images[file] = full_path
+            elif file.endswith('.html'): html_files[file] = full_path
 
-    # 1. Обоснование выбора числа кластеров
     validation_files_exist = any(f in images for f in ['elbow_method.png', 'silhouette_score.png', 'davies_bouldin_score.png', 'calinski_harabasz_score.png', 'dbscan_validation.png'])
     if validation_files_exist:
         with st.expander(f"{prefix}📉 Обоснование выбора числа кластеров (k)", expanded=False):
             st.info("💡 Здесь представлены результаты различных алгоритмов для определения оптимального числа кластеров.")
-            
-            # Интерактивный дашборд
             if 'consensus_dashboard.html' in html_files:
                 with open(html_files['consensus_dashboard.html'], 'r', encoding='utf-8') as f:
                     components.html(f.read(), height=550)
-            
-            # Таблица консенсуса
             if 'consensus_table.xlsx' in excel_files:
                 st.markdown("##### Сводная таблица (Консенсус)")
                 try:
                     df_consensus = pd.read_excel(excel_files['consensus_table.xlsx'])
                     st.dataframe(df_consensus, use_container_width=True)
-                except Exception as e:
-                    st.error(f"Ошибка чтения таблицы консенсуса: {e}")
-            
-            # Графики методов
+                except Exception as e: st.error(f"Ошибка чтения таблицы консенсуса: {e}")
             st.markdown("##### Графики алгоритмов")
             col1, col2 = st.columns(2)
             with col1:
@@ -439,7 +457,6 @@ def render_level_data(folder_path, prefix="", unique_key=""):
                 if 'silhouette_score.png' in images: st.image(Image.open(images['silhouette_score.png']), caption='Коэффициент силуэта (выше - лучше)')
                 if 'calinski_harabasz_score.png' in images: st.image(Image.open(images['calinski_harabasz_score.png']), caption='Индекс Калинского-Харабаша (выше - лучше)')
 
-    # 2. Таблицы
     if 'cluster_assignments.xlsx' in excel_files:
         with st.expander(f"{prefix}📑 Таблица принадлежности к кластерам", expanded=False):
             try:
@@ -447,8 +464,7 @@ def render_level_data(folder_path, prefix="", unique_key=""):
                 st.dataframe(df.drop(columns=[c for c in df.columns if 'Unnamed' in c], errors='ignore'), use_container_width=True)
                 with open(excel_files['cluster_assignments.xlsx'], "rb") as f:
                     st.download_button("💾 Скачать", f, "cluster_assignments.xlsx", key=f"btn_assig_{unique_key}")
-            except Exception as e:
-                st.error(f"Ошибка чтения: {e}")
+            except Exception as e: st.error(f"Ошибка чтения: {e}")
 
     if 'cluster_means.xlsx' in excel_files:
         with st.expander(f"{prefix}📑 Таблица средних значений факторов", expanded=False):
@@ -457,10 +473,8 @@ def render_level_data(folder_path, prefix="", unique_key=""):
                 st.dataframe(df.drop(columns=[c for c in df.columns if 'Unnamed' in c], errors='ignore'), use_container_width=True)
                 with open(excel_files['cluster_means.xlsx'], "rb") as f:
                     st.download_button("💾 Скачать", f, "cluster_means.xlsx", key=f"btn_means_{unique_key}")
-            except Exception as e:
-                st.error(f"Ошибка чтения: {e}")
+            except Exception as e: st.error(f"Ошибка чтения: {e}")
 
-    # 3. Визуализации
     if 'heatmap_factors.png' in images:
         with st.expander(f"{prefix}🔥 Тепловая карта различий факторов", expanded=False):
             st.image(Image.open(images['heatmap_factors.png']), use_container_width=True)
@@ -478,7 +492,6 @@ def render_level_data(folder_path, prefix="", unique_key=""):
             elif 'pca_scatter.png' in images:
                 st.image(Image.open(images['pca_scatter.png']), use_container_width=True)
 
-    # Обобщающие диаграммы
     comp_files_exist = any(f in images for f in ['clusters_comparison.png', 'clusters_comparison_split.png', 'clusters_comparison_radar.png'])
     if comp_files_exist:
         with st.expander(f"{prefix}📊 Обобщающие диаграммы: сравнение всех кластеров", expanded=False):
@@ -486,7 +499,6 @@ def render_level_data(folder_path, prefix="", unique_key=""):
             if 'clusters_comparison_split.png' in images: st.image(Image.open(images['clusters_comparison_split.png']), use_container_width=True)
             if 'clusters_comparison_radar.png' in images: st.image(Image.open(images['clusters_comparison_radar.png']), use_container_width=True)
 
-    # Детализация по кластерам
     radars = [f for f in images if 'radar_cluster_' in f]
     bars = [f for f in images if 'bar_cluster_' in f]
     if radars or bars:
@@ -501,7 +513,6 @@ def render_level_data(folder_path, prefix="", unique_key=""):
 
 def display_results(folder_path, tab_id):
     if os.path.exists(folder_path) and os.listdir(folder_path):
-        # Глобальное сравнение для мезо-уровня
         if tab_id == "meso":
             global_files = {
                 'img': os.path.join(folder_path, "global_meso_comparison.png"),
@@ -526,10 +537,8 @@ def display_results(folder_path, tab_id):
                         st.image(Image.open(global_files['elbow']), use_container_width=True)
                 st.markdown("---")
 
-        # Рендеринг данных для каждого уровня/подуровня
         system_folders = ['tables', 'plots', 'diagrams']
-        subdirs = [d for d in os.listdir(folder_path) 
-                   if os.path.isdir(os.path.join(folder_path, d)) and d not in system_folders]
+        subdirs = [d for d in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, d)) and d not in system_folders]
 
         if subdirs:
             st.success(f"Анализ успешно завершен. Разверните нужный округ для просмотра данных:")
@@ -542,7 +551,6 @@ def display_results(folder_path, tab_id):
     else:
         st.info("💡 Запустите соответствующий модуль аналитики, чтобы сгенерировать результаты.")
 
-# Используем st.session_state.update_key, чтобы принудительно перерисовывать вкладки
 with tab1: 
     st.markdown(f'<div style="display:none">{st.session_state.update_key}</div>', unsafe_allow_html=True)
     display_results("output/districts", "macro")

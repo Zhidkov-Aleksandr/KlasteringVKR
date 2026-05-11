@@ -11,6 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from math import pi
 import os
+import re
 
 
 class UniversalClusterAnalyzer:
@@ -37,6 +38,57 @@ class UniversalClusterAnalyzer:
         os.makedirs(f"{self.output_dir}/diagrams", exist_ok=True)
         os.makedirs(f"{self.output_dir}/tables", exist_ok=True)
         os.makedirs(f"{self.output_dir}/plots", exist_ok=True)
+
+    @staticmethod
+    def inspect_file(file_path_or_url):
+        """
+        Инспектирует Excel-файл, определяя его тип и доступные годы.
+        """
+        try:
+            xls = pd.ExcelFile(file_path_or_url)
+            sheet_names = xls.sheet_names
+            
+            # Проверка на "обработанный" файл
+            if len(sheet_names) == 1:
+                df_sheet = pd.read_excel(xls, sheet_names[0], header=None, nrows=15)
+                # Ищем "федеральный округ" где-нибудь в первых строках
+                found = False
+                for r in range(min(15, len(df_sheet))):
+                    for c in range(min(5, len(df_sheet.columns))):
+                        val = str(df_sheet.iloc[r, c]).lower()
+                        if "федеральный округ" in val:
+                            found = True
+                            break
+                    if found: break
+                
+                if found:
+                    return {"file_type": "processed", "available_years": []}
+
+            # Проверка на "сырой" файл
+            available_years = []
+            for sheet_name in sheet_names:
+                try:
+                    df_head = pd.read_excel(xls, sheet_name=sheet_name, header=None, nrows=10)
+                    for r in range(len(df_head)):
+                        for c in range(min(5, len(df_head.columns))):
+                            val = str(df_head.iloc[r, c]).lower()
+                            if "малым" in val and "предприяти" in val:
+                                match = re.search(r'\b(20\d{2})\b', val)
+                                if match:
+                                    y = int(match.group(1))
+                                    if y not in available_years:
+                                        available_years.append(y)
+                except Exception:
+                    continue
+            
+            if available_years:
+                return {"file_type": "raw", "available_years": sorted(list(set(available_years)))}
+
+            return {"file_type": "unknown", "available_years": []}
+
+        except Exception as e:
+            print(f"Ошибка инспекции файла: {e}")
+            return {"file_type": "error", "available_years": []}
 
     def plot_elbow(self):
         """1. Метод локтя"""
@@ -397,11 +449,13 @@ class UniversalClusterAnalyzer:
             return None
 
         import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
         # НОВАЯ РАБОЧАЯ ССЫЛКА
         geojson_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson"
         try:
-            response = requests.get(geojson_url, timeout=10)
+            response = requests.get(geojson_url, timeout=10, verify=False)
             if response.status_code != 200:
                 return None
             repo = response.json()
