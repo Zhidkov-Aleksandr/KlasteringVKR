@@ -28,7 +28,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Кастомный CSS для скрытия системных элементов Streamlit и стилизации (Светлая тема)
+# Кастомный CSS для скрытия системных элементов Streamlit
 hide_streamlit_style = """
 <style>
     #MainMenu {visibility: hidden;}

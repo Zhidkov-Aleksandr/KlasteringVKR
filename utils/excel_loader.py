@@ -84,7 +84,7 @@ def load_excel(file_path, target_year):
         if data_col_start is not None:
             break
             
-    # Фолбэк
+    # Возврат
     if data_col_start is None:
         data_col_start = region_col + 1
 
