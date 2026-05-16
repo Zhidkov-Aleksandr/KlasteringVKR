@@ -16,7 +16,7 @@ import re
 
 class UniversalClusterAnalyzer:
     """
-    Универсальный класс для проведения кластерного анализа,
+    Класс для проведения кластерного анализа,
     генерации таблиц и построения всех необходимых визуализаций
     (метод локтя, тепловая карта, PCA-точечная диаграмма, радары, столбчатые диаграммы).
     """
@@ -33,8 +33,8 @@ class UniversalClusterAnalyzer:
         self.cluster_labels = None
         self.cluster_means = None
         self.cluster_names_map = {}
-        self.elbow_K = None          # K values from elbow calculation
-        self.elbow_distortions = None # Distortion/inertia values from elbow
+        self.elbow_K = None
+        self.elbow_distortions = None
         os.makedirs(f"{self.output_dir}/diagrams", exist_ok=True)
         os.makedirs(f"{self.output_dir}/tables", exist_ok=True)
         os.makedirs(f"{self.output_dir}/plots", exist_ok=True)
@@ -42,7 +42,7 @@ class UniversalClusterAnalyzer:
     @staticmethod
     def inspect_file(file_path_or_url):
         """
-        Инспектирует Excel-файл, определяя его тип и доступные годы.
+        Инспектирует Excel-файл, определяя его тип и доступные годы анализа.
         """
         try:
             xls = pd.ExcelFile(file_path_or_url)
@@ -116,7 +116,7 @@ class UniversalClusterAnalyzer:
             model.fit(self.X_scaled)
             distortions.append(model.inertia_)
 
-        # Store elbow data for later use in global comparisons
+        # Сохранить данные об изгибе/локте для последующего использования в глобальных сравнениях
         self.elbow_K = K
         self.elbow_distortions = distortions
 
@@ -251,7 +251,7 @@ class UniversalClusterAnalyzer:
 
     @staticmethod
     def plot_consensus_dashboard(consensus_df, output_path):
-        """Создает интерактивный дашборд для консенсуса по выбору k."""
+        """Создаем интерактивный дашборд для консенсуса по выбору k."""
         if consensus_df.empty:
             return
         
@@ -645,7 +645,7 @@ class UniversalClusterAnalyzer:
         # Скрываем стандартные подписи оси X, так как мы добавим свои по центру
         ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
-        # Делаем значения по оси Y абсолютными, чтобы кластер 3 не казался "отрицательным" в реальности
+        # Делаем значения по оси Y абсолютными, чтобы кластер 3 не казался "отрицательным"
         yticks = ax.get_yticks()
         ax.set_yticklabels([f'{abs(y):.0f}' for y in yticks], fontsize=12)
         
@@ -852,11 +852,11 @@ class UniversalClusterAnalyzer:
     @staticmethod
     def plot_meso_elbow_comparison(elbow_data_dict, output_path):
         """
-        Creates a combined elbow method plot for all federal districts.
+        Создаём объединённый график метода локтя для всех федеральных округов.
 
-        Args:
-            elbow_data_dict: Dict mapping district_name -> (K_values, distortions)
-            output_path: Path to save the combined plot
+        Аргументы:
+            elbow_data_dict: Словарь, сопоставляющий название_округа -> (значения_K, искажения)
+            output_path: Путь для сохранения объединённого графика
         """
         if not elbow_data_dict:
             return
