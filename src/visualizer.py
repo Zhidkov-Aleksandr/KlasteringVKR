@@ -7,7 +7,7 @@ from config import PLOTS_DIR, TABLES_DIR
 
 class Visualizer:
     def __init__(self):
-        """Инициализация визуализатора и настройка кириллицы для графиков."""
+        """Инициализация визуализации и настройка кириллицы для графиков."""
         # Убедимся, что директории для вывода существуют
         self.base_path = base_path
         os.makedirs(self.base_path, exist_ok=True)
@@ -55,17 +55,17 @@ class Visualizer:
         plt.grid(True)
 
         filepath = PLOTS_DIR / 'elbow_method.png'
-        # dpi=300 обеспечивает типографское (высокое) качество картинки для вставки в Word
+        # dpi=300 обеспечивает высокое качество картинки для экспорта в PDF
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"[УСПЕХ] График метода локтя сохранен: {filepath}")
 
     def plot_heatmap(self, cluster_centers, feature_names, subfolder, title):
         """
-        Отрисовка тепловой карты центроидов кластеров (как на Рисунке 2.29 в ВКР).
+        Отрисовка тепловой карты центроидов кластеров
         """
         plt.figure(figsize=(10, 6))
-        # Используем цветовую схему YlGnBu (от желтого к синему), она хорошо смотрится в печати
+        # Используем цветовую схему YlGnBu (от желтого к синему)
         sns.heatmap(cluster_centers, annot=True, cmap='YlGnBu', fmt=".2f",
                     xticklabels=feature_names,
                     yticklabels=[f"Кластер {i + 1}" for i in range(len(cluster_centers))])
@@ -85,6 +85,5 @@ class Visualizer:
     def plot_radar_chart(self, *args, **kwargs):
         """
         Место для функции построения лепестковых (радарных) диаграмм.
-        (Сюда вы перенесете свой код для построения радаров из старой версии).
         """
         pass

@@ -20,7 +20,7 @@ class DatabaseManager:
         try:
             logging.info(f"Запуск парсинга структуры Excel: {excel_path}")
 
-            # Читаем файл без заголовков, чтобы обращаться по индексам (как в старом скрипте)
+            # Читаем файл без заголовков, чтобы обращаться по индексам
             df_raw = pd.read_excel(excel_path, header=None)
 
             parsed_rows = []
@@ -43,7 +43,7 @@ class DatabaseManager:
                 if territory_name == "nan" or not territory_name:
                     continue
 
-                # Собираем данные по 11 факторам (согласно порядку в вашем Excel)
+                # Собираем данные по 11 факторам (согласно порядку в таблице Excel)
                 # Важно: порядок в row[3:14] должен соответствовать порядку в FEATURE_COLUMNS в config.py
                 row_data = {
                     "Регион": territory_name
@@ -80,8 +80,7 @@ class DatabaseManager:
     def get_regional_data(self):
         try:
             with self.get_connection() as conn:
-                # Извлекаем данные, отсекая агрегированные строки (РФ и округа),
-                # если это нужно для кластеризации только субъектов.
+                # Извлекаем данные, отсекая агрегированные строки (РФ и округа)
                 query = "SELECT * FROM regions_data WHERE Регион NOT LIKE '%федеральный округ%' AND Регион != 'Российская Федерация'"
                 df = pd.read_sql_query(query, conn)
             return df

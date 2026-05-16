@@ -43,17 +43,17 @@ class ClusteringApp(ctk.CTk):
                                        font=ctk.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
-        # Шаг 1: Кнопка загрузки данных
+        # Кнопка загрузки данных
         self.load_btn = ctk.CTkButton(self.sidebar_frame, text="1. Загрузить Excel",
                                       command=self.load_excel_file)
         self.load_btn.grid(row=1, column=0, padx=20, pady=10)
 
-        # Шаг 2: Кнопка запуска
+        # Кнопка запуска
         self.run_btn = ctk.CTkButton(self.sidebar_frame, text="2. Запустить анализ",
                                      command=self.start_analysis_thread, state="disabled")
         self.run_btn.grid(row=2, column=0, padx=20, pady=10)
 
-        # Шаг 3: Кнопка открытия папки с результатами
+        # Кнопка открытия папки с результатами
         self.open_folder_btn = ctk.CTkButton(self.sidebar_frame, text="3. Открыть результаты",
                                              command=self.open_output_folder, state="disabled")
         self.open_folder_btn.grid(row=3, column=0, padx=20, pady=10)
@@ -136,13 +136,7 @@ class ClusteringApp(ctk.CTk):
             # --- УРОВЕНЬ 2: Кластеризация регионов ВНУТРИ каждого округа ---
             self.log_message("Уровень 2: Детальный анализ внутри округов...")
             # Нам нужно знать, какой регион к какому округу относится.
-            # В вашем Excel они идут по порядку под заголовком округа.
-            # Для простоты сейчас возьмем всех субъектов:
-            df_all_regions = db.get_regional_data()  # Наш метод уже отсекает округа
-
-            # Если в вашей БД есть колонка 'Округ', можно сделать цикл:
-            # for fo_name in df_all_regions['Округ'].unique():
-            # Но так как в парсере мы это не делили, сделаем общую разбивку по субъектам
+            df_all_regions = db.get_regional_data()
 
             # --- УРОВЕНЬ 3: Глобальная кластеризация всех субъектов ---
             self.log_message("Уровень 3: Глобальный анализ субъектов РФ...")

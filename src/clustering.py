@@ -12,18 +12,18 @@ class ClusteringModel:
         self.n_clusters = n_clusters
         self.random_state = random_state
         self.scaler = StandardScaler()
-        # Строго используем init='k-means++' как заявлено в ВКР
+        # Используем init='k-means++'
         self.kmeans = KMeans(n_clusters=self.n_clusters, init='k-means++',
                              random_state=self.random_state, n_init=10)
         self.pca = PCA(n_components=2, random_state=self.random_state)
 
     def extract_features(self, df: pd.DataFrame) -> np.ndarray:
-        """Извлекает только числовые колонки факторов для математики."""
+        """Извлекаем только числовые колонки факторов для вычислений."""
         return df[FEATURE_COLUMNS].values
 
     def calculate_elbow_method(self, df: pd.DataFrame, max_k: int = 10):
         """
-        Рассчитывает внутрикластерную дисперсию (инерцию) для k от 1 до max_k.
+        Рассчитываем внутрикластерную дисперсию (инерцию) для k от 1 до max_k.
         Возвращает данные для построения графика «метода локтя».
         """
         logging.info(f"Расчет метода локтя для k от 1 до {max_k}...")
@@ -43,7 +43,7 @@ class ClusteringModel:
     def fit_predict(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Основной процесс кластеризации.
-        Масштабирует данные, обучает модель, применяет PCA и возвращает размеченный датафрейм.
+        Масштабируем данные, обучаем модель, применяем PCA и возвращаем размеченный датафрейм.
         """
         logging.info(f"Запуск алгоритма K-means++ (Количество кластеров: {self.n_clusters})")
         result_df = df.copy()
@@ -55,20 +55,19 @@ class ClusteringModel:
         # 2. Обучение и предсказание
         cluster_labels = self.kmeans.fit_predict(X_scaled)
 
-        # Присваиваем метки (алгоритм выдает 0, 1, 2. Мы делаем 1, 2, 3 для ВКР)
+        # Присваиваем метки
         result_df['Номер кластера'] = cluster_labels + 1
 
         # Добавляем текстовые названия кластеров из config.py
         result_df['Название кластера'] = result_df['Номер кластера'].map(CLUSTER_NAMES)
 
-        # 3. Снижение размерности (PCA) для 2D-графиков
+        # 3. Снижаем размерности (PCA) для 2D-графиков
         logging.info("Применение метода главных компонент (PCA) для проекции 11D -> 2D.")
         pca_coords = self.pca.fit_transform(X_scaled)
         result_df['PCA_X'] = pca_coords[:, 0]
         result_df['PCA_Y'] = pca_coords[:, 1]
 
-        # 4. Расчет центроидов (средних значений факторов по каждому кластеру)
-        # Это нужно для построения тепловой карты
+        # 4. Расчет центроидов (средних значений факторов по каждому кластеру), для построения тепловой карты
         centroids = result_df.groupby('Номер кластера')[FEATURE_COLUMNS].mean()
 
         logging.info("Кластеризация успешно завершена.")
